@@ -5,13 +5,12 @@ from typing import Dict, List, Optional
 import json
 import re
 from media_apis import movie_tools, book_tools, search_tools
-from personalization_manager import PersonalizationManager
 
 class MediaRecommendationCrew:
     def __init__(self):
         self.llm = ChatOpenAI(
-            model="gpt-3.5-turbo",
-            temperature=0.7,
+            model=os.getenv("OPENAI_MODEL"),
+            temperature=os.getenv("OPENAI_TEMPERATURE"),
             api_key=os.getenv("OPENAI_API_KEY")
         )
         self.setup_agents()
