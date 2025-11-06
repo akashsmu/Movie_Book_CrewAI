@@ -187,7 +187,10 @@ Create a `.env` file with:
 
 ```env
 # Required
+# OPENAI
 OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=your_openai_llm_model_here
+OPENAI_TEMPERATURE=your_openai_llm_temperature_here
 
 # Movie Recommendations
 TMDB_API_KEY=your_tmdb_api_key_here
@@ -200,18 +203,6 @@ SERPAPI_KEY=your_serpapi_key_here
 
 # Optional - Additional APIs
 OMDB_API_KEY=your_omdb_api_key_here
-```
-
-### Model Configuration
-
-In `media_crew.py`, you can modify:
-
-```python
-self.llm = ChatOpenAI(
-    model="gpt-3.5-turbo",  # or "gpt-4" for better results
-    temperature=0.7,        # creativity vs consistency
-    api_key=os.getenv("OPENAI_API_KEY")
-)
 ```
 
 ## 🛠️ Development
@@ -269,7 +260,7 @@ def save_user_preferences(self, user_id: str, new_preference: str):
 | **OpenAI** | $0.00 initial credit | ~$0.01-0.10 per request |
 | **TMDB** | Free unlimited | $0.00 |
 | **Google Books** | Free with quotas | $0.00 for moderate use |
-| **SerpAPI** | 100 searches/month free | $0.02 per search after |
+| **SerpAPI** | 250 searches/month free | $0.02 per search after |
 
 ### Monitoring Usage
 
@@ -381,10 +372,6 @@ pip install -r requirements.txt
 # Add tests to test_media_apis.py, test_media_crew.py, etc.
 python -m pytest tests/
 ```
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 🙏 Acknowledgments
 
