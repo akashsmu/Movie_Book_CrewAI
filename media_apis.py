@@ -1,6 +1,9 @@
+import datetime
+import functools
 import os
+from time import time
 import requests
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from tmdbv3api import TMDb, Movie, Search
 from serpapi import GoogleSearch
 from crewai.tools import BaseTool
@@ -33,28 +36,66 @@ class NewsSearchInput(BaseModel):
 class TrendingMediaInput(BaseModel):
     media_type: str = Field(description="Type of media: 'movie' or 'book'")
 
-# Movie Search Tool
+# Simple in-memory cache for API responses
+_api_cache: Dict[str, Any] = {}
+
+def cache_api_call(ttl: int = 300):  # 5 minute cache
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # Create cache key from function name and arguments
+            cache_key = f"{func.__name__}:{str(args)}:{str(kwargs)}"
+            
+            # Check cache
+            if cache_key in _api_cache:
+                cache_time, result = _api_cache[cache_key]
+                if time.time() - cache_time < ttl:
+                    return result
+            
+            # Call function and cache result
+            result = func(*args, **kwargs)
+            _api_cache[cache_key] = (time.time(), result)
+            return result
+        return wrapper
+    return decorator
+
+
+# Movie Search Tool - FIXED VERSION
 class MovieSearchTool(BaseTool):
     name: str = "search_movies"
     description: str = "Search for movies using TMDB API"
     args_schema: type[BaseModel] = MovieSearchInput
     
+    @cache_api_call(ttl=300)  # Cache results for 5 minutes
     def _run(self, query: str, year: Optional[int] = None, genre: Optional[str] = None) -> str:
         try:
             # Initialize TMDB inside _run method
-            tmdb = TMDb()
-            tmdb.api_key = os.getenv('TMDB_API_KEY', 'your_tmdb_api_key_here')
-            if not tmdb.api_key or tmdb.api_key == 'your_tmdb_api_key_here':
+            api_key = os.getenv('TMDB_API_KEY')
+            if not api_key:
                 return "TMDB API key not configured. Please set TMDB_API_KEY in your environment variables."
-                
-            tmdb.language = 'en'
-            search = Search()
             
-            search_params = {"query": query}
+            base_url = "https://api.themoviedb.org/3"
+            search_url = f"{base_url}/search/movie"
+            
+            params = {
+                'api_key': api_key,
+                'query': str(query),
+                'language': 'en-US',
+                'page': 1
+            }
+
             if year:
-                search_params["year"] = year
+                params['year'] = year
                 
-            results = search.movies(search_params)
+            print(f"🔍 Searching movies with params: {params}")
+            
+            # Perform search
+            response = requests.get(search_url, params=params, timeout=10)
+            if response.status_code != 200:
+                return self._get_fallback_movies(query, genre, f"API error: {response.status_code}")
+            
+            data = response.json()
+            results = data.get('results', [])
             movies = []
             
             for movie in results[:5]:
@@ -84,7 +125,7 @@ class MovieSearchTool(BaseTool):
         try:
             # Get genre names from genre IDs
             genre_names = []
-            if hasattr(movie, 'genre_ids'):
+            if hasattr(movie, 'genre_ids') and movie.genre_ids:
                 genre_map = {
                     28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy",
                     80: "Crime", 99: "Documentary", 18: "Drama", 10751: "Family",
@@ -96,13 +137,21 @@ class MovieSearchTool(BaseTool):
                     if genre_id in genre_map:
                         genre_names.append(genre_map[genre_id])
             
+            # Safely get release year
+            release_year = 'N/A'
+            if hasattr(movie, 'release_date') and movie.release_date:
+                try:
+                    release_year = str(movie.release_date)[:4]  # Convert to string first
+                except:
+                    release_year = 'N/A'
+            
             return {
-                'id': movie.id,
-                'title': movie.title,
-                'year': movie.release_date[:4] if movie.release_date else 'N/A',
-                'rating': round(movie.vote_average, 1) if movie.vote_average else 'N/A',
+                'id': getattr(movie, 'id', 'N/A'),
+                'title': getattr(movie, 'title', 'Unknown Title'),
+                'year': release_year,
+                'rating': round(movie.vote_average, 1) if hasattr(movie, 'vote_average') and movie.vote_average else 'N/A',
                 'genre': ', '.join(genre_names) if genre_names else 'Unknown',
-                'description': movie.overview or 'No description available'
+                'description': getattr(movie, 'overview', 'No description available')
             }
         except Exception as e:
             print(f"Error getting basic movie details: {e}")
@@ -116,67 +165,102 @@ class MovieDetailsTool(BaseTool):
     
     def _run(self, movie_id: int) -> str:
         try:
-            # Initialize TMDB inside _run method
-            tmdb = TMDb()
-            tmdb.api_key = os.getenv('TMDB_API_KEY', 'your_tmdb_api_key_here')
-            if not tmdb.api_key or tmdb.api_key == 'your_tmdb_api_key_here':
+            api_key = os.getenv('TMDB_API_KEY')
+            if not api_key:
                 return "TMDB API key not configured. Please set TMDB_API_KEY in your environment variables."
-                
-            tmdb.language = 'en'
-            movie_api = Movie()
             
-            movie = movie_api.details(movie_id)
+            # Use direct HTTP API call
+            base_url = "https://api.themoviedb.org/3"
+            movie_url = f"{base_url}/movie/{movie_id}"
             
-            details = {
-                'title': movie.title,
-                'year': movie.release_date[:4] if movie.release_date else 'N/A',
-                'rating': round(movie.vote_average, 1) if movie.vote_average else 'N/A',
-                'genre': ', '.join([genre.name for genre in movie.genres][:3]),
-                'description': movie.overview or 'No description available',
-                'duration': f"{movie.runtime} min" if movie.runtime else 'N/A',
-                'cast': ', '.join([cast_member.name for cast_member in getattr(movie, 'casts', {}).get('cast', [])[:3]]) if hasattr(movie, 'casts') and movie.casts else 'N/A'
+            params = {
+                'api_key': api_key,
+                'language': 'en-US',
+                'append_to_response': 'credits'
             }
             
+            print(f"🔍 Getting details for movie ID: {movie_id}")
+            response = requests.get(movie_url, params=params, timeout=10)
+            
+            if response.status_code != 200:
+                return f"Error fetching movie details: {response.status_code}"
+            
+            movie_data = response.json()
+            
+            # Parse the data safely
+            title = movie_data.get('title', 'Unknown Title')
+            release_date = movie_data.get('release_date', '')
+            release_year = release_date[:4] if release_date else 'N/A'
+            rating = round(movie_data.get('vote_average', 0), 1)
+            
+            # Get genres
+            genres = [genre.get('name', '') for genre in movie_data.get('genres', [])[:3]]
+            genre_str = ', '.join([g for g in genres if g])
+            
+            description = movie_data.get('overview', 'No description available')
+            runtime = movie_data.get('runtime', 0)
+            duration = f"{runtime} min" if runtime else 'N/A'
+            
+            # Get cast
+            cast = movie_data.get('credits', {}).get('cast', [])
+            cast_names = [actor.get('name', '') for actor in cast[:3]]
+            cast_str = ', '.join([c for c in cast_names if c])
+            
             return (
-                f"Title: {details['title']} ({details['year']})\n"
-                f"Rating: {details['rating']}/10\n"
-                f"Genre: {details['genre']}\n"
-                f"Duration: {details['duration']}\n"
-                f"Description: {details['description']}\n"
-                f"Cast: {details['cast']}"
+                f"Title: {title} ({release_year})\n"
+                f"Rating: {rating}/10\n"
+                f"Genre: {genre_str if genre_str else 'Unknown'}\n"
+                f"Duration: {duration}\n"
+                f"Description: {description}\n"
+                f"Cast: {cast_str if cast_str else 'N/A'}"
             )
+            
         except Exception as e:
             return f"Error getting movie details: {str(e)}"
 
 # Popular Movies Tool
 class PopularMoviesTool(BaseTool):
     name: str = "get_popular_movies"
-    description: str = "Get currently popular movies"
+    description: str = "Get currently popular movies using direct API calls"
     
     def _run(self, genre: Optional[str] = None) -> str:
         try:
-            # Initialize TMDB inside _run method
-            tmdb = TMDb()
-            tmdb.api_key = os.getenv('TMDB_API_KEY', 'your_tmdb_api_key_here')
-            if not tmdb.api_key or tmdb.api_key == 'your_tmdb_api_key_here':
-                return "TMDB API key not configured. Please set TMDB_API_KEY in your environment variables."
-                
-            tmdb.language = 'en'
-            movie_api = Movie()
+            api_key = os.getenv('TMDB_API_KEY')
+            if not api_key:
+                return "TMDB API key not configured. Using fallback popular movies."
             
-            popular = movie_api.popular()
+            # Use direct HTTP API call
+            base_url = "https://api.themoviedb.org/3"
+            popular_url = f"{base_url}/movie/popular"
+            
+            params = {
+                'api_key': api_key,
+                'language': 'en-US',
+                'page': 1
+            }
+            
+            print("🔍 Getting popular movies via direct API...")
+            response = requests.get(popular_url, params=params, timeout=10)
+            
+            if response.status_code != 200:
+                return "Error fetching popular movies. Using fallback data."
+            
+            data = response.json()
+            results = data.get('results', [])
+            
+            if not results:
+                return "No popular movies found. Using fallback data."
+            
             movies = []
-            
-            for movie in popular[:8]:
-                basic_details = self._get_basic_movie_details(movie)
-                if basic_details:
-                    movies.append(basic_details)
-                
-                if len(movies) >= 5:
-                    break
+            for movie_data in results[:5]:
+                movie_details = self._parse_movie_data(movie_data)
+                if movie_details:
+                    # Filter by genre if specified
+                    if not genre or genre.lower() in movie_details['genre'].lower():
+                        movies.append(movie_details)
             
             if not movies:
-                return "No popular movies found."
+                return "No popular movies match the specified genre."
             
             formatted_results = []
             for movie in movies:
@@ -190,33 +274,38 @@ class PopularMoviesTool(BaseTool):
             return "Popular Movies:\n" + "\n---\n".join(formatted_results)
             
         except Exception as e:
-            return f"Error getting popular movies: {str(e)}"
-    
-    def _get_basic_movie_details(self, movie) -> Optional[Dict]:
+            return f"Error getting popular movies: {str(e)}. Using fallback data."
+
+    def _parse_movie_data(self, movie_data: Dict) -> Optional[Dict]:
+        """Parse movie data from TMDB API response"""
         try:
+            genre_map = {
+                28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy",
+                80: "Crime", 99: "Documentary", 18: "Drama", 10751: "Family",
+                14: "Fantasy", 36: "History", 27: "Horror", 10402: "Music",
+                9648: "Mystery", 10749: "Romance", 878: "Science Fiction",
+                10770: "TV Movie", 53: "Thriller", 10752: "War", 37: "Western"
+            }
+            
             genre_names = []
-            if hasattr(movie, 'genre_ids'):
-                genre_map = {
-                    28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy",
-                    80: "Crime", 99: "Documentary", 18: "Drama", 10751: "Family",
-                    14: "Fantasy", 36: "History", 27: "Horror", 10402: "Music",
-                    9648: "Mystery", 10749: "Romance", 878: "Science Fiction",
-                    10770: "TV Movie", 53: "Thriller", 10752: "War", 37: "Western"
-                }
-                for genre_id in movie.genre_ids[:3]:
-                    if genre_id in genre_map:
-                        genre_names.append(genre_map[genre_id])
+            for genre_id in movie_data.get('genre_ids', [])[:3]:
+                if genre_id in genre_map:
+                    genre_names.append(genre_map[genre_id])
+            
+            release_date = movie_data.get('release_date', '')
+            release_year = release_date[:4] if release_date else 'N/A'
             
             return {
-                'title': movie.title,
-                'year': movie.release_date[:4] if movie.release_date else 'N/A',
-                'rating': round(movie.vote_average, 1) if movie.vote_average else 'N/A',
+                'title': movie_data.get('title', 'Unknown Title'),
+                'year': release_year,
+                'rating': round(movie_data.get('vote_average', 0), 1),
                 'genre': ', '.join(genre_names) if genre_names else 'Unknown',
-                'description': movie.overview or 'No description available'
+                'description': movie_data.get('overview', 'No description available')
             }
         except Exception as e:
-            print(f"Error getting basic movie details: {e}")
+            print(f"Error parsing movie data: {e}")
             return None
+        
 
 # Book Search Tool
 class BookSearchTool(BaseTool):
@@ -226,20 +315,19 @@ class BookSearchTool(BaseTool):
     
     def _run(self, query: str, genre: Optional[str] = None) -> str:
         try:
-            api_key = os.getenv('GOOGLE_BOOKS_API_KEY', 'your_google_books_api_key_here')
-            if not api_key or api_key == 'your_google_books_api_key_here':
+            api_key = os.getenv('GOOGLE_BOOKS_API_KEY')
+            if not api_key:
                 return "Google Books API key not configured. Please set GOOGLE_BOOKS_API_KEY in your environment variables."
                 
-            # URL encode the query
-            encoded_query = urllib.parse.quote(query)
-            
+            # Use simple string query without URL encoding - let requests handle it
             params = {
-                'q': encoded_query,
+                'q': query,  # requests will handle encoding
                 'maxResults': 8,
                 'printType': 'books',
                 'key': api_key
             }
             
+            print(f"🔍 Searching books with query: {query}")
             response = requests.get('https://www.googleapis.com/books/v1/volumes', params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
@@ -281,7 +369,7 @@ class BookSearchTool(BaseTool):
                 'authors': volume_info.get('authors', ['Unknown Author']),
                 'published_year': volume_info.get('publishedDate', '')[:4] if volume_info.get('publishedDate') else 'N/A',
                 'genre': ', '.join(volume_info.get('categories', ['General'])),
-                'description': volume_info.get('description', 'No description available.')[:300],  # Limit description length
+                'description': volume_info.get('description', 'No description available.')[:300],
                 'rating': volume_info.get('averageRating', 'N/A'),
             }
         except Exception as e:
@@ -296,8 +384,8 @@ class BookDetailsTool(BaseTool):
     
     def _run(self, book_id: str) -> str:
         try:
-            api_key = os.getenv('GOOGLE_BOOKS_API_KEY', 'your_google_books_api_key_here')
-            if not api_key or api_key == 'your_google_books_api_key_here':
+            api_key = os.getenv('GOOGLE_BOOKS_API_KEY')
+            if not api_key:
                 return "Google Books API key not configured. Please set GOOGLE_BOOKS_API_KEY in your environment variables."
                 
             response = requests.get(f'https://www.googleapis.com/books/v1/volumes/{book_id}', timeout=10)
@@ -349,8 +437,8 @@ class SimilarTitlesTool(BaseTool):
     
     def _run(self, title: str, media_type: str) -> str:
         try:
-            api_key = os.getenv('SERPAPI_KEY', 'your_serpapi_key_here')
-            if not api_key or api_key == 'your_serpapi_key_here':
+            api_key = os.getenv('SERPAPI_KEY')
+            if not api_key:
                 return "SerpAPI key not configured. Please set SERPAPI_KEY in your environment variables."
                 
             query = f"{media_type}s similar to {title}"
@@ -366,7 +454,6 @@ class SimilarTitlesTool(BaseTool):
             search = GoogleSearch(params)
             results = search.get_dict()
             
-            # Safely access the results
             organic_results = results.get('organic_results', [])
             if not organic_results:
                 return f"No similar {media_type}s found for '{title}'."
@@ -374,7 +461,6 @@ class SimilarTitlesTool(BaseTool):
             similar_titles = []
             for result in organic_results[:5]:
                 title_text = result.get('title', '')
-                # Clean up the title
                 title_text = title_text.replace(' - Similar movies', '').replace(' - Similar books', '')
                 if title_text and title_text not in similar_titles:
                     similar_titles.append(title_text)
@@ -395,8 +481,8 @@ class NewsSearchTool(BaseTool):
     
     def _run(self, query: str) -> str:
         try:
-            api_key = os.getenv('SERPAPI_KEY', 'your_serpapi_key_here')
-            if not api_key or api_key == 'your_serpapi_key_here':
+            api_key = os.getenv('SERPAPI_KEY')
+            if not api_key:
                 return "SerpAPI key not configured. Please set SERPAPI_KEY in your environment variables."
                 
             params = {
@@ -411,14 +497,12 @@ class NewsSearchTool(BaseTool):
             search = GoogleSearch(params)
             results = search.get_dict()
             
-            # Safely access news results
             news_results = results.get('news_results', [])
             if not news_results:
                 return f"No recent news found for query: '{query}'"
             
             news_items = []
             for result in news_results[:3]:
-                # Safely access nested properties
                 source_info = result.get('source', {})
                 source_name = source_info.get('name', 'N/A') if isinstance(source_info, dict) else 'N/A'
                 
@@ -442,11 +526,11 @@ class TrendingMediaTool(BaseTool):
     
     def _run(self, media_type: str = "movie") -> str:
         try:
-            api_key = os.getenv('SERPAPI_KEY', 'your_serpapi_key_here')
-            if not api_key or api_key == 'your_serpapi_key_here':
+            api_key = os.getenv('SERPAPI_KEY')
+            if not api_key:
                 return "SerpAPI key not configured. Please set SERPAPI_KEY in your environment variables."
                 
-            query = f"trending {media_type}s 2024" if media_type == "movie" else f"best selling books 2024"
+            query = f"trending {media_type}s {datetime.datetime.year}" if media_type == "movie" else f"best selling books {datetime.datetime.year}"
             
             params = {
                 'q': query,

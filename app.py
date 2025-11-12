@@ -194,8 +194,20 @@ class MediaRecommenderApp:
                     # Placeholder for images (would be implemented with actual API)
                     emoji = "🎬" if rec.get('type') == 'movie' else "📚"
                     st.markdown(f"<h3>{emoji} #{i}</h3>", unsafe_allow_html=True)
-                    if rec.get('rating'):
-                        st.metric("Rating", f"{rec['rating']}/10")
+                    # Render rating for movies (out of 10) and books (out of 5).
+                    rating = rec.get('rating', None)
+                    if rating is not None:
+                        try:
+                            # numeric ratings normalized earlier (float) - detect scale
+                            r = float(rating)
+                            if rec.get('type') == 'book':
+                                st.metric("Rating", f"{r}/5")
+                            else:
+                                # default to /10 for movies
+                                st.metric("Rating", f"{r}/10")
+                        except Exception:
+                            # If rating is a string like 'N/A' or already formatted
+                            st.metric("Rating", str(rating))
                 
                 with col2:
                     st.markdown(f"#### {rec['title']} ({rec.get('year', 'N/A')})")
