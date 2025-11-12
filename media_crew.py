@@ -1,428 +1,845 @@
 from crewai import Agent, Task, Crew, Process
 from langchain_openai import ChatOpenAI
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
+import requests
 import json
 import re
+import time
+import logging
+from datetime import datetime
 from media_apis import movie_tools, book_tools, search_tools
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('media_recommender.log')
+    ]
+)
+logger = logging.getLogger(__name__)
 
 class MediaRecommendationCrew:
     def __init__(self):
-        self.llm = ChatOpenAI(
-            model=os.getenv("OPENAI_MODEL"),
-            temperature=os.getenv("OPENAI_TEMPERATURE"),
-            api_key=os.getenv("OPENAI_API_KEY")
-        )
+        self.llm = self._setup_llm()
         self.setup_agents()
         self.setup_tasks()
+        logger.info("MediaRecommendationCrew initialized successfully")
+    
+    def _setup_llm(self) -> ChatOpenAI:
+        """Configure and return the LLM with proper error handling"""
+        try:
+            model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+            temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
+            api_key = os.getenv("OPENAI_API_KEY")
+            
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY environment variable is required")
+            
+            return ChatOpenAI(
+                model=model,
+                temperature=temperature,
+                api_key=api_key,
+                max_retries=2,
+                request_timeout=30
+            )
+        except Exception as e:
+            logger.error(f"Failed to setup LLM: {e}")
+            raise
     
     def setup_agents(self):
-        # Analysis Agent - Determines user intent and media type
-        self.analysis_agent = Agent(
-            role="Media Request Analyst",
-            goal="Analyze user requests to determine whether they want movie or book recommendations and extract key preferences",
-            backstory="""You are an expert at understanding user preferences and intent in media requests. 
-            You can discern whether someone wants movies, books, or both, and extract key elements like 
-            genre, mood, themes, and specific requirements from their description.""",
-            verbose=True,
-            allow_delegation=False,
-            llm=self.llm
-        )
-        
-        # Movie Specialist Agent with proper tools
-        self.movie_agent = Agent(
-            role="Movie Recommendation Specialist",
-            goal="Find the best movie recommendations based on user preferences using real-time data",
-            backstory="""You are a film expert with deep knowledge of cinema across all genres and time periods. 
-            You use TMDB and search APIs to find current, relevant movie recommendations that match user preferences. 
-            You consider factors like ratings, reviews, director, cast, and cultural relevance.""",
-            verbose=True,
-            allow_delegation=False,
-            llm=self.llm,
-            tools=movie_tools + [search_tools[0]]  # movie tools + similar_titles_tool
-        )
-        
-        # Book Specialist Agent with proper tools
-        self.book_agent = Agent(
-            role="Book Recommendation Specialist",
-            goal="Find the best book recommendations based on user preferences using real-time data",
-            backstory="""You are a literary expert with extensive knowledge of books across all genres. 
-            You use Google Books API and search APIs to find perfect book matches for users. 
-            You consider writing style, author reputation, reviews, and thematic elements.""",
-            verbose=True,
-            allow_delegation=False,
-            llm=self.llm,
-            tools=book_tools + [search_tools[0]]  # book tools + similar_titles_tool
-        )
-        
-        # Research Agent for additional context
-        self.research_agent = Agent(
-            role="Media Research Specialist",
-            goal="Gather additional context, reviews, and trending information about recommended media",
-            backstory="""You are a research expert who finds additional context, recent reviews, 
-            and trending information about movies and books to enhance recommendation quality.""",
-            verbose=True,
-            allow_delegation=False,
-            llm=self.llm,
-            tools=search_tools  # All search tools
-        )
-        
-        # Editor Agent - Refines and personalizes recommendations
-        self.editor_agent = Agent(
-            role="Recommendation Editor",
-            goal="Review, refine and personalize recommendations to ensure they meet user needs",
-            backstory="""You are a senior editor who ensures all recommendations are high-quality, relevant, 
-            and personalized. You check for consistency, remove duplicates, add personalization touches, 
-            and ensure the final list is perfectly tailored to the user's stated preferences and context.""",
-            verbose=True,
-            allow_delegation=False,
-            llm=self.llm
-        )
+        """Initialize all agents with enhanced configuration"""
+        try:
+            # Analysis Agent - Determines user intent and media type
+            self.analysis_agent = Agent(
+                role="Media Request Analyst",
+                goal="""Analyze user requests to determine media type preference (movie/book/both) 
+                and extract specific preferences like genre, mood, timeframe, and themes.""",
+                backstory="""You are an expert at understanding user preferences and intent in media requests. 
+                You excel at discerning whether someone wants movies, books, or both, and can extract key elements 
+                like genre, mood, themes, and specific requirements from their description with high accuracy.""",
+                verbose=False,
+                allow_delegation=False,
+                llm=self.llm,
+                max_iter=2,  # Prevent infinite loops
+                max_rpm=30   # Rate limiting
+            )
+            
+            # Movie Specialist Agent
+            self.movie_agent = Agent(
+                role="Movie Recommendation Specialist",
+                goal="Find highly-rated, relevant movie recommendations using TMDB API and search tools",
+                backstory="""You are a film expert with comprehensive knowledge of cinema across all genres and eras. 
+                You use TMDB API and search tools to find current, highly-rated movies that perfectly match user preferences. 
+                You consider factors like ratings, reviews, cultural relevance, and thematic alignment.""",
+                verbose=False,
+                allow_delegation=False,
+                llm=self.llm,
+                tools=movie_tools + [search_tools[0]],  # movie tools + similar_titles_tool
+                max_iter=3,
+                max_rpm=30
+            )
+            
+            # Book Specialist Agent
+            self.book_agent = Agent(
+                role="Book Recommendation Specialist",
+                goal="Find compelling book recommendations using Google Books API and search tools",
+                backstory="""You are a literary expert with extensive knowledge of books across all genres and time periods. 
+                You use Google Books API and search tools to find perfect book matches based on user preferences. 
+                You consider writing style, author reputation, thematic elements, and reader reviews.""",
+                verbose=False,
+                allow_delegation=False,
+                llm=self.llm,
+                tools=book_tools + [search_tools[0]],  # book tools + similar_titles_tool
+                max_iter=3,
+                max_rpm=30
+            )
+            
+            # Research Agent
+            self.research_agent = Agent(
+                role="Media Research Specialist",
+                goal="Gather additional context, reviews, and trending information to enhance recommendation quality",
+                backstory="""You are a research expert who finds additional context, recent reviews, 
+                trending information, and cultural insights about recommended media to provide comprehensive recommendations.""",
+                verbose=False,
+                allow_delegation=False,
+                llm=self.llm,
+                tools=search_tools,
+                max_iter=2,
+                max_rpm=30
+            )
+            
+            # Editor Agent
+            self.editor_agent = Agent(
+                role="Recommendation Editor",
+                goal="Review, refine and personalize recommendations to ensure they perfectly match user needs",
+                backstory="""You are a senior editor who ensures all recommendations are high-quality, relevant, 
+                and personalized. You check for consistency, remove duplicates, add personalization touches, 
+                and ensure the final list is perfectly tailored to the user's stated preferences and context.""",
+                verbose=False,
+                allow_delegation=False,
+                llm=self.llm,
+                max_iter=3,
+                max_rpm=30
+            )
+            
+            logger.info("All agents initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to setup agents: {e}")
+            raise
     
     def setup_tasks(self):
-        # Analysis task
-        self.analysis_task = Task(
-            description="""Analyze the user request: {user_request}
-            Determine if they want movies, books, or both.
-            Extract key preferences: genre, mood, themes, timeframe, and any specific requirements.
-            Consider personalization context: {personalization_context}
+        """Initialize all tasks with clear completion criteria and constraints"""
+        try:
+            # Analysis task
+            self.analysis_task = Task(
+                description="""ANALYZE USER REQUEST:
+                
+                User Request: {user_request}
+                Personalization Context: {personalization_context}
+                
+                YOUR MISSION:
+                1. Determine primary media type preference (movie/book/both)
+                2. Extract specific genres, themes, and moods
+                3. Identify timeframe preferences
+                4. Note any special requirements or constraints
+                
+                OUTPUT FORMAT:
+                - Media Type: [movie/book/both]
+                - Key Genres: [comma-separated list]
+                - Mood/Tone: [primary mood]
+                - Timeframe: [specific preference]
+                - Special Requirements: [any specific asks]""",
+                agent=self.analysis_agent,
+                expected_output="""Clear determination of media type and user preferences in structured format.
+                Must include: Media Type, Key Genres, Mood/Tone, Timeframe, Special Requirements.""",
+                max_iter=2,
+
+            )
             
-            Provide a structured analysis with:
-            1. Primary media type (movie/book/both)
-            2. Key genres and themes
-            3. Mood and tone preferences
-            4. Time period preferences
-            5. Specific requirements or constraints""",
-            agent=self.analysis_agent,
-            expected_output="Structured analysis of user preferences and media type determination"
-        )
-        
-        # Movie recommendation task
-        self.movie_task = Task(
-            description="""Based on the analysis, find {num_recommendations} movie recommendations.
+            # Movie recommendation task
+            self.movie_task = Task(
+                description="""FIND MOVIE RECOMMENDATIONS:
+                
+                User Preferences:
+                - Media Type: {media_type}
+                - Genre: {genre}
+                - Mood: {mood}
+                - Timeframe: {timeframe}
+                - Specific Request: {user_request}
+                - Number Needed: {num_recommendations}
+                
+                REQUIREMENTS:
+                - Find {num_recommendations} highly-rated movies
+                - Match user preferences closely
+                - Include diverse options when possible
+                - Use TMDB API for accurate data
+                
+                FOR EACH MOVIE, PROVIDE:
+                - Title and release year
+                - Genre classification
+                - Rating (out of 10)
+                - Brief description
+                - Why it matches user preferences
+                - 2-3 similar movies""",
+                agent=self.movie_agent,
+                expected_output="""List of {num_recommendations} movie recommendations with complete details.
+                Each must include: title, year, genre, rating, description, why_recommended, similar_titles.""",
+                async_execution=True,
+                max_iter=3,
+            )
             
-            User Preferences:
-            - Genre: {genre}
-            - Mood: {mood}
-            - Timeframe: {timeframe}
-            - Specific requirements: {user_request}
+            # Book recommendation task
+            self.book_task = Task(
+                description="""FIND BOOK RECOMMENDATIONS:
+                
+                User Preferences:
+                - Media Type: {media_type}
+                - Genre: {genre}
+                - Mood: {mood}
+                - Timeframe: {timeframe}
+                - Specific Request: {user_request}
+                - Number Needed: {num_recommendations}
+                
+                REQUIREMENTS:
+                - Find {num_recommendations} highly-rated books
+                - Match user preferences closely
+                - Include diverse authors and styles
+                - Use Google Books API for accurate data
+                
+                FOR EACH BOOK, PROVIDE:
+                - Title and author
+                - Publication year
+                - Genre classification
+                - Rating (out of 5)
+                - Brief description
+                - Why it matches user preferences
+                - 2-3 similar books""",
+                agent=self.book_agent,
+                expected_output="""List of {num_recommendations} book recommendations with complete details.
+                Each must include: title, author, year, genre, rating, description, why_recommended, similar_titles.""",
+                async_execution=True,
+                max_iter=3,
+            )
             
-            Use the movie tools to search for current, highly-rated movies that match these preferences.
-            For each movie, gather:
-            - Title, year, rating
-            - Genre and description
-            - Why it matches user preferences
-            - Similar movies (use search tools)
+            # Research task
+            self.research_task = Task(
+                description="""RESEARCH ADDITIONAL CONTEXT:
+                
+                User Request: {user_request}
+                Media Type: {media_type}
+                
+                RESEARCH FOCUS:
+                - Recent news about recommended genres/themes
+                - Trending movies/books in relevant categories
+                - Cultural context and relevance
+                - Critical reception and reviews
+                
+                PROVIDE:
+                - Summary of relevant trends
+                - Notable news or updates
+                - Cultural context insights
+                - Any relevant additional information""",
+                agent=self.research_agent,
+                expected_output="""Concise research summary with relevant trends, news, and cultural context.
+                Focus on information that enhances recommendation quality.""",
+                async_execution=True,
+                max_iter=2,
+            )
             
-            Return a well-formatted list of movie recommendations.""",
-            agent=self.movie_agent,
-            expected_output="List of 3-5 movie recommendations with detailed information",
-            async_execution=True
-        )
-        
-        # Book recommendation task
-        self.book_task = Task(
-            description="""Based on the analysis, find {num_recommendations} book recommendations.
+            # Editor task
+            self.editor_task = Task(
+                description="""FINALIZE RECOMMENDATIONS:
+                
+                COMPILE AND REFINE:
+                - Combine recommendations from all specialists
+                - Remove duplicates and ensure diversity
+                - Add personalized explanations
+                - Rank by relevance and quality
+                - Incorporate research insights
+                
+                OUTPUT REQUIREMENTS:
+                - Valid JSON array only
+                - 3-5 total recommendations
+                - Mix of media types if applicable
+                - Clear personalization for each item
+                
+                CRITICAL: Return ONLY valid JSON, no other text.
+                
+                JSON FORMAT:
+                [
+                  {{
+                    "title": "Item Title",
+                    "type": "movie/book",
+                    "year": "2023",
+                    "genre": "Genre1, Genre2",
+                    "rating": 8.5,
+                    "description": "Brief description",
+                    "why_recommended": "Personalized explanation",
+                    "similar_titles": ["Title1", "Title2", "Title3"]
+                  }}
+                ]""",
+                agent=self.editor_agent,
+                expected_output="""Valid JSON array with 3-5 personalized media recommendations.
+                Each item must have: title, type, year, genre, rating, description, why_recommended, similar_titles.
+                NO additional text outside JSON.""",
+                max_iter=3,
+            )
             
-            User Preferences:
-            - Genre: {genre}
-            - Mood: {mood}
-            - Timeframe: {timeframe}
-            - Specific requirements: {user_request}
+            logger.info("All tasks initialized successfully")
             
-            Use the book tools to search for highly-rated books that match these preferences.
-            For each book, gather:
-            - Title, author, publication year
-            - Genre and description
-            - Why it matches user preferences
-            - Similar books (use search tools)
-            
-            Return a well-formatted list of book recommendations.""",
-            agent=self.book_agent,
-            expected_output="List of 3-5 book recommendations with detailed information",
-            async_execution=True
-        )
-        
-        # Research task for additional context
-        self.research_task = Task(
-            description="""Research additional context for media recommendations.
-            
-            For the user request: {user_request}
-            
-            Use search tools to:
-            - Find recent news or reviews about recommended genres
-            - Check trending movies and books
-            - Gather cultural context about the themes
-            - Find any relevant updates
-            
-            This information will help the editor make better final recommendations.""",
-            agent=self.research_agent,
-            expected_output="Additional context and research about the media landscape",
-            async_execution=True
-        )
-        
-        # Editor task - Updated to return proper JSON
-        self.editor_task = Task(
-            description="""Review and refine all recommendations from movie, book, and research agents.
-            
-            Original user request: {user_request}
-            Personalization context: {personalization_context}
-            
-            Your responsibilities:
-            1. Combine and deduplicate recommendations from all agents
-            2. Ensure diversity in recommendations (different genres, eras, styles)
-            3. Add personalized explanations for why each item was chosen
-            4. Rank recommendations by relevance and quality
-            5. Format the final output as a VALID JSON array
-            6. Incorporate research context where relevant
-            7. Ensure each recommendation has: title, type, year, genre, description, why_recommended, similar_titles
-            
-            IMPORTANT: Return ONLY a valid JSON array. No additional text, no markdown, no code blocks.
-            
-            Example format:
-            [
-                {{
-                    "title": "Movie Name",
-                    "type": "movie",
-                    "year": 2020,
-                    "genre": "Action, Sci-Fi",
-                    "description": "Movie description here",
-                    "why_recommended": "Why this matches user preferences",
-                    "similar_titles": ["Similar 1", "Similar 2", "Similar 3"]
-                }}
-            ]
-            
-            Final output should be a valid JSON array with 3-5 recommendations.""",
-            agent=self.editor_agent,
-            expected_output="Valid JSON array of personalized media recommendations"
-        )
+        except Exception as e:
+            logger.error(f"Failed to setup tasks: {e}")
+            raise
     
     def run(self, user_request: str, media_type: str = "both", genre: Optional[str] = None,
             mood: Optional[str] = None, timeframe: Optional[str] = None,
             num_recommendations: int = 3, personalization_context: str = "") -> List[Dict]:
+        """
+        Execute the media recommendation crew with enhanced error handling and monitoring
         
-        # Set up task inputs
-        task_inputs = {
-            "user_request": user_request,
-            "media_type": media_type,
-            "genre": genre or "Not specified",
-            "mood": mood or "Not specified", 
-            "timeframe": timeframe or "Not specified",
-            "num_recommendations": num_recommendations,
-            "personalization_context": personalization_context
-        }
+        Args:
+            user_request: The user's media request
+            media_type: Type of media ('movie', 'book', 'both')
+            genre: Preferred genre
+            mood: Desired mood/tone
+            timeframe: Time period preference
+            num_recommendations: Number of recommendations to return
+            personalization_context: User personalization context
+            
+        Returns:
+            List of recommendation dictionaries
+        """
+        start_time = time.time()
+        logger.info(f"Starting crew execution for request: {user_request[:100]}...")
         
-        # Update tasks with current inputs
-        self.analysis_task.description = self.analysis_task.description.format(**task_inputs)
-        self.movie_task.description = self.movie_task.description.format(**task_inputs)
-        self.book_task.description = self.book_task.description.format(**task_inputs)
-        self.research_task.description = self.research_task.description.format(**task_inputs)
-        self.editor_task.description = self.editor_task.description.format(**task_inputs)
+        try:
+            # Validate inputs
+            self._validate_inputs(user_request, media_type, num_recommendations)
+            self._current_media_type = media_type  # Store for task configuration
+            self._current_user_request = user_request  # Store for task configuration
+
+            # Set up task inputs
+            task_inputs = {
+                "user_request": user_request,
+                "media_type": media_type,
+                "genre": genre or "Not specified",
+                "mood": mood or "Not specified", 
+                "timeframe": timeframe or "Not specified",
+                "num_recommendations": num_recommendations,
+                "personalization_context": personalization_context or "No personalization context"
+            }
+            
+            # Update tasks with current inputs
+            self._update_task_descriptions(task_inputs)
+            
+            # Create crew with production settings
+            crew = self._create_crew()
+            
+            # Execute with timeout protection
+            result = self._execute_crew_with_timeout(crew, task_inputs, timeout=120)  # 5 minute timeout
+            
+            # Parse and validate results
+            recommendations = self._process_crew_result(result, user_request, media_type)
+            
+            execution_time = time.time() - start_time
+            logger.info(f"Crew execution completed in {execution_time:.2f}s. "
+                       f"Returning {len(recommendations)} recommendations.")
+            
+            return recommendations
+            
+        except Exception as e:
+            execution_time = time.time() - start_time
+            logger.error(f"Crew execution failed after {execution_time:.2f}s: {e}")
+            return self._get_fallback_recommendations(user_request, media_type)
+
+        finally:
+            if hasattr(self, '_current_media_type'):
+                del self._current_media_type  # Clean up any stored state
+
+
+
+    def _validate_inputs(self, user_request: str, media_type: str, num_recommendations: int):
+        """Validate input parameters"""
+        if not user_request or not user_request.strip():
+            raise ValueError("User request cannot be empty")
         
-        # Create crew based on media type
+        if media_type not in ['movie', 'book', 'both']:
+            raise ValueError("Media type must be 'movie', 'book', or 'both'")
+        
+        if not 1 <= num_recommendations <= 10:
+            raise ValueError("Number of recommendations must be between 1 and 10")
+    
+    def _update_task_descriptions(self, task_inputs: Dict[str, Any]):
+        """Update task descriptions with current inputs"""
+        try:
+            self.analysis_task.description = self.analysis_task.description.format(**task_inputs)
+            self.movie_task.description = self.movie_task.description.format(**task_inputs)
+            self.book_task.description = self.book_task.description.format(**task_inputs)
+            self.research_task.description = self.research_task.description.format(**task_inputs)
+            self.editor_task.description = self.editor_task.description.format(**task_inputs)
+        except KeyError as e:
+            logger.warning(f"Missing key in task inputs: {e}")
+    
+    def _create_crew(self) -> Crew:
+        """Create crew with production configuration"""
         tasks = [self.analysis_task]
         
+        media_type = getattr(self, '_current_media_type', 'both')
+    
         if media_type in ["movie", "both"]:
             tasks.append(self.movie_task)
         if media_type in ["book", "both"]:
             tasks.append(self.book_task)
+
+        user_request = getattr(self, '_current_user_request', '')
+        if any(word in user_request.lower() for word in ['trending', 'new', 'recent', 'latest', 'upcoming', 'update', 'news', 'current']):
+            tasks.append(self.research_task)
         
-        tasks.append(self.research_task)
+        #tasks.append(self.research_task)
         tasks.append(self.editor_task)
         
-        crew = Crew(
+        return Crew(
             agents=[self.analysis_agent, self.movie_agent, self.book_agent, 
                    self.research_agent, self.editor_agent],
             tasks=tasks,
             process=Process.sequential,
-            verbose=True
+            verbose=False,  # Set to False in production
+            memory=False,
+            max_rpm=100,
+            #full_output=False,
+            #step_callback=lambda step: logger.info(f"Step completed: {step}"),
+            #task_callback=lambda task: logger.info(f"Task started: {task.agent.role}")
         )
+    
+    def _execute_crew_with_timeout(self, crew: Crew, inputs: Dict[str, Any], timeout: int = 300):
+        """Execute crew with timeout protection"""
+        import time
+        
+        start_time = time.time()
         
         try:
-            print("🤖 Starting CrewAI execution...")
+            logger.info("Starting crew kickoff...")
             result = crew.kickoff()
-            print(f"🎯 CrewAI execution completed. Result type: {type(result)}")
-            print(f"📝 Raw result: {result}")
             
-            # Parse the actual result
-            recommendations = self._parse_result(result)
-            print(f"✅ Parsed {len(recommendations)} recommendations")
-            return recommendations
-            
+            execution_time = time.time() - start_time
+            if execution_time > timeout:
+                logger.warning(f"Crew execution timed out after {execution_time:.2f} seconds")
+            return result
+        
+        except TimeoutError:
+            logger.error("Crew execution timed out")
+            raise
         except Exception as e:
-            print(f"❌ Error in crew execution: {e}")
-            # Return fallback recommendations only if real parsing fails
+            execution_time = time.time() - start_time  # Ensure timeout is cleared
+            if execution_time > timeout:
+                logger.warning(f"Crew execution timed out after {execution_time:.2f} seconds")
+                raise TimeoutError(f"Crew execution timed out after {execution_time:.2f} seconds") from e
+            else:
+                raise
+    
+    def _process_crew_result(self, result: Any, user_request: str, media_type: str) -> List[Dict]:
+        """Process and validate crew result"""
+        logger.info("Processing crew result...")
+        
+        # Parse the result
+        recommendations = self._parse_result(result) or []
+        
+        # Validate we have recommendations
+        if not recommendations:
+            logger.warning("No recommendations parsed from crew result, using fallback")
             return self._get_fallback_recommendations(user_request, media_type)
+        
+        # Enrich and validate recommendations
+        try:
+            self._enrich_ratings(recommendations)
+            self._validate_recommendations(recommendations)
+        except Exception as e:
+            logger.warning(f"Recommendation enrichment/validation failed: {e}")
+        
+        logger.info(f"Successfully processed {len(recommendations)} recommendations")
+        return recommendations
     
     def _parse_result(self, result) -> List[Dict]:
-        """Parse the crew result into structured recommendations"""
+        """Parse crew result with enhanced error handling"""
         try:
-            print(f"🔍 Parsing result: {result}")
+            logger.debug(f"Raw result type: {type(result)}, length: {len(str(result)) if hasattr(result, '__len__') else 'N/A'}")
             
-            # If result is already a list, return it
+            # Handle different result types
             if isinstance(result, list):
-                print("✅ Result is already a list")
+                logger.info("Result is already a list")
                 return result
             
-            # Convert to string if needed
             result_str = str(result)
-            print(f"📄 Result as string: {result_str[:500]}...")  # First 500 chars
+            logger.debug(f"Result string preview: {result_str[:200]}...")
             
-            # Try to find JSON in the result
+            # Try JSON extraction first
             json_match = self._extract_json_from_text(result_str)
             if json_match:
-                print("✅ Found JSON in result")
-                parsed_data = json.loads(json_match)
-                if isinstance(parsed_data, list):
-                    return parsed_data
+                logger.info("Successfully extracted JSON from result")
+                return self._parse_json_safely(json_match)
             
-            # If no JSON found, try to parse as structured text
-            print("🔄 Trying to parse as structured text")
+            # Fall back to structured text parsing
+            logger.info("Attempting structured text parsing")
             structured_result = self._parse_structured_text(result_str)
             if structured_result:
-                print("✅ Successfully parsed structured text")
+                logger.info("Successfully parsed structured text")
                 return structured_result
             
-            print("❌ Could not parse result, using fallback")
-            return self._get_fallback_recommendations("parsing_failed", "both")
+            logger.warning("Could not parse result using any method")
+            return None
             
         except Exception as e:
-            print(f"❌ Error parsing result: {e}")
-            return self._get_fallback_recommendations("error", "both")
+            logger.error(f"Error parsing result: {e}")
+            return None
     
     def _extract_json_from_text(self, text: str) -> Optional[str]:
-        """Extract JSON from text response"""
+        """Extract JSON from text with improved pattern matching"""
         try:
-            # Look for JSON array pattern
-            json_pattern = r'\[\s*\{.*?\}\s*\]'
-            match = re.search(json_pattern, text, re.DOTALL)
-            if match:
-                return match.group()
+            # Multiple JSON pattern attempts
+            patterns = [
+                r'\[\s*\{[^{}]*\}\s*\]',  # Simple array
+                r'\[\s*\{.*?\}\s*\]',     # Array with any content
+                r'\{\s*"recommendations".*?\}',  # Object with recommendations key
+            ]
             
-            # Look for JSON object pattern (single recommendation)
-            object_pattern = r'\{\s*".*?"\s*:\s*".*?"\s*\}'
-            matches = re.findall(object_pattern, text, re.DOTALL)
-            if matches:
-                return f'[{",".join(matches)}]'
-                
+            for pattern in patterns:
+                match = re.search(pattern, text, re.DOTALL)
+                if match:
+                    logger.debug(f"Found JSON with pattern: {pattern}")
+                    return match.group()
+            
             return None
         except Exception as e:
-            print(f"Error extracting JSON: {e}")
+            logger.error(f"Error extracting JSON: {e}")
+            return None
+    
+    def _parse_json_safely(self, json_str: str) -> Optional[List[Dict]]:
+        """Safely parse JSON with validation"""
+        try:
+            parsed_data = json.loads(json_str)
+            
+            if isinstance(parsed_data, list):
+                # Validate each item in the list
+                valid_items = []
+                for item in parsed_data:
+                    if isinstance(item, dict) and item.get('title'):
+                        valid_items.append(item)
+                
+                if valid_items:
+                    logger.info(f"Validated {len(valid_items)} JSON recommendations")
+                    return valid_items
+            
+            logger.warning("JSON parsing resulted in invalid format")
+            return None
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error parsing JSON: {e}")
             return None
     
     def _parse_structured_text(self, text: str) -> Optional[List[Dict]]:
-        """Parse structured text into recommendations"""
+        """Parse structured text with improved field detection"""
         try:
             recommendations = []
+            current_rec = {}
             lines = text.split('\n')
             
-            current_rec = {}
-            for line in lines:
+            for i, line in enumerate(lines):
                 line = line.strip()
                 if not line:
                     continue
-                    
-                # Look for title patterns
-                if any(keyword in line.lower() for keyword in ['title:', 'movie:', 'book:']):
-                    if current_rec and 'title' in current_rec:
+                
+                # New recommendation detection
+                if self._is_new_recommendation(line):
+                    if current_rec and self._is_valid_recommendation(current_rec):
                         recommendations.append(current_rec)
                         current_rec = {}
-                    
-                    # Extract title
-                    title = self._extract_value(line, ['title:', 'movie:', 'book:'])
-                    if title:
-                        current_rec['title'] = title
-                        current_rec['type'] = 'movie' if 'movie' in line.lower() else 'book'
                 
-                # Extract other fields
-                elif 'year:' in line.lower() and current_rec:
-                    year = self._extract_value(line, ['year:'])
-                    current_rec['year'] = year
-                elif 'genre:' in line.lower() and current_rec:
-                    genre = self._extract_value(line, ['genre:'])
-                    current_rec['genre'] = genre
-                elif 'description:' in line.lower() and current_rec:
-                    desc = self._extract_value(line, ['description:'])
-                    current_rec['description'] = desc
-                elif 'why:' in line.lower() and current_rec:
-                    why = self._extract_value(line, ['why:', 'why recommended:', 'recommended because:'])
-                    current_rec['why_recommended'] = why
+                # Field extraction
+                self._extract_field(line, current_rec)
             
-            # Add the last recommendation
-            if current_rec and 'title' in current_rec:
+            # Add final recommendation
+            if current_rec and self._is_valid_recommendation(current_rec):
                 recommendations.append(current_rec)
             
-            # Add default similar titles if missing
-            for rec in recommendations:
-                if 'similar_titles' not in rec:
-                    rec['similar_titles'] = ["Similar title 1", "Similar title 2", "Similar title 3"]
-            
-            return recommendations if recommendations else None
+            # Post-process recommendations
+            return self._post_process_recommendations(recommendations)
             
         except Exception as e:
-            print(f"Error parsing structured text: {e}")
+            logger.error(f"Error in structured text parsing: {e}")
             return None
     
-    def _extract_value(self, line: str, keywords: List[str]) -> str:
-        """Extract value after keywords in a line"""
-        for keyword in keywords:
-            if keyword in line.lower():
-                return line.split(keyword, 1)[1].strip()
-        return ""
+    def _is_new_recommendation(self, line: str) -> bool:
+        """Check if line indicates a new recommendation"""
+        new_rec_indicators = [
+            'title:', 'movie:', 'book:', 'recommendation', '###', '---',
+            str(len(self.recommendations) + 1) + '.',  # "1.", "2.", etc.
+        ]
+        return any(indicator in line.lower() for indicator in new_rec_indicators)
+    
+    def _extract_field(self, line: str, current_rec: Dict):
+        """Extract field from line and add to current recommendation"""
+        field_patterns = {
+            'title': ['title:', 'movie:', 'book:'],
+            'year': ['year:', 'released:', 'published:'],
+            'genre': ['genre:', 'category:'],
+            'rating': ['rating:', 'score:'],
+            'description': ['description:', 'summary:', 'plot:'],
+            'why_recommended': ['why:', 'recommended because:', 'matches because:'],
+            'type': ['type:']
+        }
+        
+        for field, patterns in field_patterns.items():
+            for pattern in patterns:
+                if pattern in line.lower():
+                    value = line.split(':', 1)[1].strip() if ':' in line else line
+                    current_rec[field] = value
+                    return
+    
+    def _is_valid_recommendation(self, rec: Dict) -> bool:
+        """Check if recommendation has minimum required fields"""
+        return bool(rec.get('title') and rec.get('type'))
+    
+    def _post_process_recommendations(self, recommendations: List[Dict]) -> List[Dict]:
+        """Add missing fields and validate recommendations"""
+        for rec in recommendations:
+            # Ensure required fields
+            rec.setdefault('rating', 'N/A')
+            rec.setdefault('similar_titles', [])
+            rec.setdefault('description', 'No description available')
+            rec.setdefault('why_recommended', 'Matches your preferences')
+            
+            # Clean up fields
+            if 'year' in rec:
+                rec['year'] = str(rec['year']).split('-')[0]  # Extract year from date
+            
+            # Ensure rating is properly formatted
+            self._normalize_rating(rec)
+        
+        return recommendations
+    
+    def _normalize_rating(self, rec: Dict):
+        """Normalize rating to numeric format"""
+        rating = rec.get('rating')
+        if isinstance(rating, (int, float)):
+            rec['rating'] = float(rating)
+        elif isinstance(rating, str):
+            try:
+                # Handle "8.5/10", "4.5/5", etc.
+                if '/' in rating:
+                    rec['rating'] = float(rating.split('/')[0].strip())
+                else:
+                    rec['rating'] = float(rating)
+            except (ValueError, AttributeError):
+                rec['rating'] = 'N/A'
+    
+    def _validate_recommendations(self, recommendations: List[Dict]):
+        """Validate recommendation structure and content"""
+        for rec in recommendations:
+            if not rec.get('title'):
+                logger.warning(f"Recommendation missing title: {rec}")
+            if not rec.get('type') in ['movie', 'book']:
+                logger.warning(f"Invalid type in recommendation: {rec.get('type')}")
+    
+    def _enrich_ratings(self, recommendations: List[Dict]):
+        """Enhanced rating enrichment with better error handling"""
+        for rec in recommendations:
+            try:
+                current_rating = rec.get('rating')
+                
+                # Skip if we already have a valid rating
+                if current_rating not in (None, '', 'N/A', 'Unknown'):
+                    continue
+                
+                # Attempt to fetch rating
+                fetched_rating = self._fetch_rating_for_rec(rec)
+                if fetched_rating is not None:
+                    rec['rating'] = fetched_rating
+                    logger.debug(f"Enriched rating for {rec.get('title')}: {fetched_rating}")
+                else:
+                    rec['rating'] = 'N/A'
+                    
+            except Exception as e:
+                logger.warning(f"Failed to enrich rating for {rec.get('title')}: {e}")
+                rec['rating'] = 'N/A'
+    
+    def _fetch_rating_for_rec(self, rec: Dict) -> Optional[float]:
+        """Fetch rating with improved error handling and caching"""
+        title = rec.get('title')
+        if not title:
+            return None
+        
+        media_type = rec.get('type')
+        
+        try:
+            if media_type == 'movie':
+                return self._fetch_movie_rating(title)
+            elif media_type == 'book':
+                return self._fetch_book_rating(title)
+        except Exception as e:
+            logger.debug(f"Rating fetch failed for {title}: {e}")
+            return None
+        
+        return None
+    
+    def _fetch_movie_rating(self, title: str) -> Optional[float]:
+        """Fetch movie rating from TMDB"""
+        api_key = os.getenv('TMDB_API_KEY')
+        if not api_key:
+            return None
+        
+        try:
+            params = {
+                'api_key': api_key,
+                'query': title,
+                'language': 'en-US',
+                'page': 1
+            }
+            
+            response = requests.get(
+                'https://api.themoviedb.org/3/search/movie',
+                params=params,
+                timeout=10
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            results = data.get('results', [])
+            
+            if results and results[0].get('vote_average'):
+                return round(float(results[0]['vote_average']), 1)
+                
+        except Exception as e:
+            logger.debug(f"TMDB API error for {title}: {e}")
+        
+        return None
+    
+    def _fetch_book_rating(self, title: str) -> Optional[float]:
+        """Fetch book rating from Google Books"""
+        api_key = os.getenv('GOOGLE_BOOKS_API_KEY')
+        
+        try:
+            params = {'q': title, 'maxResults': 1}
+            if api_key:
+                params['key'] = api_key
+            
+            response = requests.get(
+                'https://www.googleapis.com/books/v1/volumes',
+                params=params,
+                timeout=10
+            )
+            response.raise_for_status()
+            
+            data = response.json()
+            items = data.get('items', [])
+            
+            if items:
+                volume_info = items[0].get('volumeInfo', {})
+                avg_rating = volume_info.get('averageRating')
+                if avg_rating is not None:
+                    return float(avg_rating)
+                    
+        except Exception as e:
+            logger.debug(f"Google Books API error for {title}: {e}")
+        
+        return None
     
     def _get_fallback_recommendations(self, user_request: str, media_type: str) -> List[Dict]:
-        """Provide fallback recommendations when real parsing fails"""
-        print("🔄 Using fallback recommendations")
+        """Provide high-quality fallback recommendations"""
+        logger.info(f"Using fallback recommendations for: {user_request}")
         
-        fallback_movies = [
-            {
-                "title": "Inception",
-                "type": "movie",
-                "year": "2010",
-                "genre": "Sci-Fi, Thriller",
-                "rating": "8.8",
-                "description": "A thief who steals corporate secrets through dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
-                "why_recommended": "Mind-bending plot with stunning visuals that matches your interest in thought-provoking sci-fi.",
-                "similar_titles": ["The Matrix", "Interstellar", "Tenet"]
-            },
-            {
-                "title": "The Shawshank Redemption",
-                "type": "movie", 
-                "year": "1994",
-                "genre": "Drama",
-                "rating": "9.3",
-                "description": "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
-                "why_recommended": "Powerful storytelling and character development that resonates emotionally.",
-                "similar_titles": ["The Green Mile", "Forrest Gump", "The Godfather"]
-            }
-        ]
-        
-        fallback_books = [
-            {
-                "title": "Project Hail Mary",
-                "type": "book",
-                "year": "2021", 
-                "genre": "Science Fiction",
-                "rating": "4.8",
-                "description": "A lone astronaut must save the earth from disaster in this high-stakes sci-fi adventure filled with humor and science.",
-                "why_recommended": "Engaging hard sci-fi with compelling characters and problem-solving.",
-                "similar_titles": ["The Martian", "Artemis", "Three Body Problem"]
-            },
-            {
-                "title": "The Midnight Library",
-                "type": "book",
-                "year": "2020",
-                "genre": "Fiction, Fantasy", 
-                "rating": "4.6",
-                "description": "Between life and death there is a library, and within that library, the shelves go on forever. Every book provides a chance to try another life you could have lived.",
-                "why_recommended": "Thought-provoking exploration of life choices and possibilities.",
-                "similar_titles": ["The Invisible Life of Addie LaRue", "Life After Life", "The Alchemist"]
-            }
-        ]
+        # Enhanced fallback data with more variety
+        fallback_data = {
+            'movie': [
+                {
+                    "title": "Inception",
+                    "type": "movie",
+                    "year": "2010",
+                    "genre": "Sci-Fi, Thriller",
+                    "rating": 8.8,
+                    "description": "A thief who steals corporate secrets through dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
+                    "why_recommended": "Mind-bending plot with stunning visuals perfect for fans of complex sci-fi narratives.",
+                    "similar_titles": ["The Matrix", "Interstellar", "Tenet"]
+                },
+                {
+                    "title": "The Shawshank Redemption",
+                    "type": "movie", 
+                    "year": "1994",
+                    "genre": "Drama",
+                    "rating": 9.3,
+                    "description": "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
+                    "why_recommended": "Powerful storytelling and character development that resonates emotionally with viewers.",
+                    "similar_titles": ["The Green Mile", "Forrest Gump", "The Godfather"]
+                },
+                {
+                    "title": "Parasite",
+                    "type": "movie",
+                    "year": "2019",
+                    "genre": "Thriller, Drama",
+                    "rating": 8.6,
+                    "description": "Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.",
+                    "why_recommended": "Award-winning social thriller that masterfully blends multiple genres.",
+                    "similar_titles": ["Snowpiercer", "Memories of Murder", "Shoplifters"]
+                }
+            ],
+            'book': [
+                {
+                    "title": "Project Hail Mary",
+                    "type": "book",
+                    "year": "2021", 
+                    "genre": "Science Fiction",
+                    "rating": 4.8,
+                    "description": "A lone astronaut must save the earth from disaster in this high-stakes sci-fi adventure filled with humor and science.",
+                    "why_recommended": "Engaging hard sci-fi with compelling characters and creative problem-solving.",
+                    "similar_titles": ["The Martian", "Artemis", "Three Body Problem"]
+                },
+                {
+                    "title": "The Midnight Library",
+                    "type": "book",
+                    "year": "2020",
+                    "genre": "Fiction, Fantasy", 
+                    "rating": 4.6,
+                    "description": "Between life and death there is a library, and within that library, the shelves go on forever. Every book provides a chance to try another life you could have lived.",
+                    "why_recommended": "Thought-provoking exploration of life choices, regrets, and possibilities.",
+                    "similar_titles": ["The Invisible Life of Addie LaRue", "Life After Life", "The Alchemist"]
+                },
+                {
+                    "title": "Where the Crawdads Sing",
+                    "type": "book",
+                    "year": "2018",
+                    "genre": "Mystery, Fiction",
+                    "rating": 4.8,
+                    "description": "The story of Kya Clark, the 'Marsh Girl' of Barkley Cove, North Carolina, and a mysterious murder that rocks the small town.",
+                    "why_recommended": "Beautifully written mystery with rich atmosphere and character development.",
+                    "similar_titles": ["The Great Alone", "The Secret Life of Bees", "Educated"]
+                }
+            ]
+        }
         
         if media_type == "movie":
-            return fallback_movies[:3]
+            return fallback_data['movie'][:3]
         elif media_type == "book":
-            return fallback_books[:3]
+            return fallback_data['book'][:3]
         else:
-            return fallback_movies[:2] + fallback_books[:1]
+            # Mix for "both" - ensure we have both types
+            movies = fallback_data['movie'][:2]
+            books = fallback_data['book'][:1]
+            return movies + books
+
+    def get_execution_metrics(self) -> Dict[str, Any]:
+        """Get execution metrics for monitoring"""
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "agents_initialized": len([self.analysis_agent, self.movie_agent, self.book_agent, 
+                                     self.research_agent, self.editor_agent]),
+            "tasks_configured": len([self.analysis_task, self.movie_task, self.book_task,
+                                   self.research_task, self.editor_task]),
+            "llm_model": self.llm.model_name,
+            "llm_temperature": self.llm.temperature
+        }

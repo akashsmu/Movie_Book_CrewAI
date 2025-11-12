@@ -1,0 +1,141 @@
+2025-11-12 15:04:15,687 - media_crew - INFO - All agents initialized successfully
+2025-11-12 15:04:15,688 - media_crew - INFO - All tasks initialized successfully
+2025-11-12 15:04:15,688 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-11-12 15:04:15,688 - media_crew - INFO - Starting crew execution for request: Inception like movies...
+2025-11-12 15:04:15,688 - media_crew - ERROR - Crew execution failed after 0.00s: 'list' object has no attribute 'get'
+2025-11-12 15:04:15,688 - media_crew - INFO - Using fallback recommendations for: Inception like movies
+2025-11-12 15:04:35,673 - media_crew - INFO - All agents initialized successfully
+2025-11-12 15:04:35,674 - media_crew - INFO - All tasks initialized successfully
+2025-11-12 15:04:35,674 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-11-12 15:04:35,674 - media_crew - INFO - Starting crew execution for request: sci fi with thriller...
+2025-11-12 15:04:35,675 - media_crew - ERROR - Crew execution failed after 0.00s: 'list' object has no attribute 'get'
+2025-11-12 15:04:35,675 - media_crew - INFO - Using fallback recommendations for: sci fi with thriller
+2025-11-12 15:10:43,113 - media_crew - INFO - All agents initialized successfully
+2025-11-12 15:10:43,114 - media_crew - INFO - All tasks initialized successfully
+2025-11-12 15:10:43,114 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-11-12 15:10:43,114 - media_crew - INFO - Starting crew execution for request: sci fi with thriller...
+2025-11-12 15:10:43,122 - media_crew - ERROR - Crew execution failed after 0.01s: signal only works in main thread of the main interpreter
+2025-11-12 15:10:43,122 - media_crew - INFO - Using fallback recommendations for: sci fi with thriller
+2025-11-12 15:10:46,036 - media_crew - INFO - All agents initialized successfully
+2025-11-12 15:10:46,037 - media_crew - INFO - All tasks initialized successfully
+2025-11-12 15:10:46,037 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-11-12 15:10:46,037 - media_crew - INFO - Starting crew execution for request: sci fi with thriller...
+2025-11-12 15:10:46,039 - media_crew - ERROR - Crew execution failed after 0.00s: signal only works in main thread of the main interpreter
+2025-11-12 15:10:46,039 - media_crew - INFO - Using fallback recommendations for: sci fi with thriller
+2025-11-12 15:14:32,805 - media_crew - INFO - All agents initialized successfully
+2025-11-12 15:14:32,806 - media_crew - INFO - All tasks initialized successfully
+2025-11-12 15:14:32,806 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-11-12 15:14:32,806 - media_crew - INFO - Starting crew execution for request: sci fi with thriller...
+2025-11-12 15:14:32,809 - media_crew - INFO - Starting crew kickoff...
+2025-11-12 15:14:32,861 - chromadb.telemetry.product.posthog - INFO - Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+2025-11-12 15:14:35,339 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-11-12 15:14:36,616 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-11-12 15:14:38,735 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:14:38,750 - root - INFO - OpenAI API usage: {'prompt_tokens': 482, 'completion_tokens': 46, 'total_tokens': 528}
+2025-11-12 15:14:38,752 - media_crew - INFO - Step completed: AgentFinish(thought='I now can give a great answer', output='- Media Type: movie  \n- Key Genres: sci-fi, thriller  \n- Mood/Tone: suspenseful  \n- Timeframe: contemporary  \n- Special Requirements: none', text='I now can give a great answer  \nFinal Answer:  \n- Media Type: movie  \n- Key Genres: sci-fi, thriller  \n- Mood/Tone: suspenseful  \n- Timeframe: contemporary  \n- Special Requirements: none')
+2025-11-12 15:14:39,554 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-11-12 15:14:45,193 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:14:46,197 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-11-12 15:14:47,080 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-11-12 15:14:47,947 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-11-12 15:14:48,188 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-11-12 15:14:49,501 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/embeddings "HTTP/1.1 200 OK"
+2025-11-12 15:14:49,523 - media_crew - ERROR - Crew execution failed after 16.72s: 'str' object has no attribute 'role'
+2025-11-12 15:14:49,524 - media_crew - INFO - Using fallback recommendations for: sci fi with thriller
+2025-11-12 15:16:54,005 - media_crew - INFO - All agents initialized successfully
+2025-11-12 15:16:54,006 - media_crew - INFO - All tasks initialized successfully
+2025-11-12 15:16:54,006 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-11-12 15:16:54,006 - media_crew - INFO - Starting crew execution for request: sci fi with thriller...
+2025-11-12 15:16:54,008 - media_crew - INFO - Starting crew kickoff...
+2025-11-12 15:16:59,146 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:16:59,167 - root - INFO - OpenAI API usage: {'prompt_tokens': 482, 'completion_tokens': 53, 'total_tokens': 535}
+2025-11-12 15:16:59,168 - media_crew - INFO - Step completed: AgentFinish(thought='I now can give a great answer', output='- Media Type: movie  \n- Key Genres: sci-fi, thriller  \n- Mood/Tone: suspenseful  \n- Timeframe: contemporary (recent releases preferred)  \n- Special Requirements: none noted', text='I now can give a great answer  \nFinal Answer: \n- Media Type: movie  \n- Key Genres: sci-fi, thriller  \n- Mood/Tone: suspenseful  \n- Timeframe: contemporary (recent releases preferred)  \n- Special Requirements: none noted  ')
+2025-11-12 15:16:59,169 - media_crew - ERROR - Crew execution failed after 5.16s: 'str' object has no attribute 'role'
+2025-11-12 15:16:59,171 - media_crew - INFO - Using fallback recommendations for: sci fi with thriller
+2025-11-12 15:19:10,593 - media_crew - INFO - All agents initialized successfully
+2025-11-12 15:19:10,594 - media_crew - INFO - All tasks initialized successfully
+2025-11-12 15:19:10,594 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-11-12 15:19:10,594 - media_crew - INFO - Starting crew execution for request: sci fi with thriller...
+2025-11-12 15:19:10,597 - media_crew - INFO - Starting crew kickoff...
+2025-11-12 15:19:18,858 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:19:18,860 - root - INFO - OpenAI API usage: {'prompt_tokens': 482, 'completion_tokens': 46, 'total_tokens': 528}
+2025-11-12 15:19:20,743 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:19:20,762 - root - INFO - OpenAI API usage: {'prompt_tokens': 723, 'completion_tokens': 43, 'total_tokens': 766}
+2025-11-12 15:19:26,620 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:19:26,638 - root - INFO - OpenAI API usage: {'prompt_tokens': 544, 'completion_tokens': 443, 'total_tokens': 987}
+2025-11-12 15:20:49,232 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:20:49,237 - root - INFO - OpenAI API usage: {'prompt_tokens': 784, 'completion_tokens': 52, 'total_tokens': 836}
+2025-11-12 15:22:08,005 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:22:08,014 - root - INFO - OpenAI API usage: {'prompt_tokens': 766, 'completion_tokens': 447, 'total_tokens': 1213}
+2025-11-12 15:22:11,593 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:22:11,605 - root - INFO - OpenAI API usage: {'prompt_tokens': 979, 'completion_tokens': 75, 'total_tokens': 1054}
+2025-11-12 15:23:56,262 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:23:56,266 - root - INFO - OpenAI API usage: {'prompt_tokens': 1444, 'completion_tokens': 1058, 'total_tokens': 2502}
+2025-11-12 15:24:47,666 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:24:47,670 - root - INFO - OpenAI API usage: {'prompt_tokens': 977, 'completion_tokens': 347, 'total_tokens': 1324}
+2025-11-12 15:26:42,969 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:26:42,973 - root - INFO - OpenAI API usage: {'prompt_tokens': 1575, 'completion_tokens': 570, 'total_tokens': 2145}
+2025-11-12 15:27:24,945 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:27:24,959 - root - INFO - OpenAI API usage: {'prompt_tokens': 1507, 'completion_tokens': 337, 'total_tokens': 1844}
+2025-11-12 15:28:19,424 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:28:19,427 - root - INFO - OpenAI API usage: {'prompt_tokens': 1639, 'completion_tokens': 397, 'total_tokens': 2036}
+2025-11-12 15:29:52,739 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:29:52,753 - root - INFO - OpenAI API usage: {'prompt_tokens': 2145, 'completion_tokens': 410, 'total_tokens': 2555}
+2025-11-12 15:31:27,712 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:31:27,725 - root - INFO - OpenAI API usage: {'prompt_tokens': 2320, 'completion_tokens': 365, 'total_tokens': 2685}
+2025-11-12 15:34:08,305 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:34:08,311 - root - INFO - OpenAI API usage: {'prompt_tokens': 2618, 'completion_tokens': 455, 'total_tokens': 3073}
+2025-11-12 15:34:23,229 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:34:23,247 - root - INFO - OpenAI API usage: {'prompt_tokens': 2618, 'completion_tokens': 512, 'total_tokens': 3130}
+2025-11-12 15:34:30,240 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:34:30,258 - root - INFO - OpenAI API usage: {'prompt_tokens': 1253, 'completion_tokens': 451, 'total_tokens': 1704}
+2025-11-12 15:34:30,276 - media_crew - WARNING - Crew execution timed out after 919.68 seconds
+2025-11-12 15:34:30,280 - media_crew - INFO - Processing crew result...
+2025-11-12 15:34:30,281 - media_crew - INFO - Successfully extracted JSON from result
+2025-11-12 15:34:30,287 - media_crew - INFO - Validated 3 JSON recommendations
+2025-11-12 15:34:30,287 - media_crew - INFO - Successfully processed 3 recommendations
+2025-11-12 15:34:30,287 - media_crew - INFO - Crew execution completed in 919.69s. Returning 3 recommendations.
+2025-11-12 15:35:49,671 - media_crew - INFO - All agents initialized successfully
+2025-11-12 15:35:49,672 - media_crew - INFO - All tasks initialized successfully
+2025-11-12 15:35:49,672 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-11-12 15:35:49,672 - media_crew - INFO - Starting crew execution for request: books like a good girls guide to murder
+...
+2025-11-12 15:35:49,675 - media_crew - INFO - Starting crew kickoff...
+2025-11-12 15:35:51,625 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:35:51,627 - root - INFO - OpenAI API usage: {'prompt_tokens': 487, 'completion_tokens': 61, 'total_tokens': 548}
+2025-11-12 15:35:54,017 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:35:54,034 - root - INFO - OpenAI API usage: {'prompt_tokens': 657, 'completion_tokens': 100, 'total_tokens': 757}
+2025-11-12 15:36:01,423 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:36:01,438 - root - INFO - OpenAI API usage: {'prompt_tokens': 548, 'completion_tokens': 464, 'total_tokens': 1012}
+2025-11-12 15:37:00,518 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:37:00,531 - root - INFO - OpenAI API usage: {'prompt_tokens': 1147, 'completion_tokens': 998, 'total_tokens': 2145}
+2025-11-12 15:38:43,320 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:38:43,331 - root - INFO - OpenAI API usage: {'prompt_tokens': 776, 'completion_tokens': 449, 'total_tokens': 1225}
+2025-11-12 15:39:49,397 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:39:49,400 - root - INFO - OpenAI API usage: {'prompt_tokens': 1304, 'completion_tokens': 841, 'total_tokens': 2145}
+2025-11-12 15:40:17,965 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:40:17,969 - root - INFO - OpenAI API usage: {'prompt_tokens': 1705, 'completion_tokens': 1012, 'total_tokens': 2717}
+2025-11-12 15:41:17,023 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:41:17,053 - root - INFO - OpenAI API usage: {'prompt_tokens': 1788, 'completion_tokens': 792, 'total_tokens': 2580}
+2025-11-12 15:41:30,817 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:41:30,820 - root - INFO - OpenAI API usage: {'prompt_tokens': 1039, 'completion_tokens': 400, 'total_tokens': 1439}
+2025-11-12 15:41:37,866 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:41:38,001 - root - INFO - OpenAI API usage: {'prompt_tokens': 1487, 'completion_tokens': 317, 'total_tokens': 1804}
+2025-11-12 15:42:26,463 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:42:26,576 - root - INFO - OpenAI API usage: {'prompt_tokens': 2218, 'completion_tokens': 1340, 'total_tokens': 3558}
+2025-11-12 15:43:37,649 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:43:37,664 - root - INFO - OpenAI API usage: {'prompt_tokens': 2628, 'completion_tokens': 1238, 'total_tokens': 3866}
+2025-11-12 15:44:55,327 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:44:55,339 - root - INFO - OpenAI API usage: {'prompt_tokens': 3112, 'completion_tokens': 1395, 'total_tokens': 4507}
+2025-11-12 15:46:00,183 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:46:00,184 - root - INFO - OpenAI API usage: {'prompt_tokens': 3322, 'completion_tokens': 964, 'total_tokens': 4286}
+2025-11-12 15:46:12,271 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:46:12,272 - root - INFO - OpenAI API usage: {'prompt_tokens': 3322, 'completion_tokens': 535, 'total_tokens': 3857}
+2025-11-12 15:46:18,923 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-11-12 15:46:18,949 - root - INFO - OpenAI API usage: {'prompt_tokens': 1257, 'completion_tokens': 437, 'total_tokens': 1694}
+2025-11-12 15:46:18,962 - media_crew - WARNING - Crew execution timed out after 629.29 seconds
+2025-11-12 15:46:18,965 - media_crew - INFO - Processing crew result...
+2025-11-12 15:46:18,965 - media_crew - INFO - Successfully extracted JSON from result
+2025-11-12 15:46:18,972 - media_crew - INFO - Validated 3 JSON recommendations
+2025-11-12 15:46:18,972 - media_crew - INFO - Successfully processed 3 recommendations
+2025-11-12 15:46:18,973 - media_crew - INFO - Crew execution completed in 629.30s. Returning 3 recommendations.
