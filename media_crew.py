@@ -200,7 +200,8 @@ class MediaRecommendationCrew:
                 - Rating (out of 10)
                 - Brief description
                 - Why it matches user preferences
-                - 2-3 similar movies""",
+                - 2-3 similar movies
+                - Image/Poster URL (from search results)""",
                 agent=self.movie_agent,
                 expected_output="""List of {num_recommendations} movie recommendations with complete details.
                 Each must include: title, year, genre, rating, description, why_recommended, similar_titles.""",
@@ -233,7 +234,8 @@ class MediaRecommendationCrew:
                 - Rating (out of 5)
                 - Brief description
                 - Why it matches user preferences
-                - 2-3 similar books""",
+                - 2-3 similar books
+                - Image/Cover URL (from search results)""",
                 agent=self.book_agent,
                 expected_output="""List of {num_recommendations} book recommendations with complete details.
                 Each must include: title, author, year, genre, rating, description, why_recommended, similar_titles.""",
@@ -400,6 +402,35 @@ class MediaRecommendationCrew:
             self.editor_task.description = self.editor_task.description.format(**task_inputs)
         except KeyError as e:
             logger.warning(f"Missing key in task inputs: {e}")
+
+    def _log_step(self, step_output):
+        """Safe step callback logger"""
+        try:
+            # Attempt to extract agent role if available
+            agent_role = "Unknown Agent"
+            if hasattr(step_output, 'agent') and hasattr(step_output.agent, 'role'):
+                agent_role = step_output.agent.role
+            
+            # Log the step occurrence
+            logger.info(f"Agent Step: {agent_role} is executing a step...")
+            
+            # Optionally log thought/tool if available and needed
+            # if hasattr(step_output, 'thought'):
+            #    logger.debug(f"Thought: {step_output.thought}")
+                
+        except Exception as e:
+            logger.warning(f"Error in step callback: {e}")
+
+    def _log_task(self, task_output):
+        """Safe task callback logger"""
+        try:
+            agent_role = "Unknown Agent"
+            if hasattr(task_output, 'agent') and hasattr(task_output.agent, 'role'):
+                agent_role = task_output.agent.role
+            
+            logger.info(f"Task Completion: {agent_role} has finished their task.")
+        except Exception as e:
+            logger.warning(f"Error in task callback: {e}")
     
     def _create_crew(self) -> Crew:
         """Create crew with production configuration"""
@@ -424,11 +455,11 @@ class MediaRecommendationCrew:
                     self.research_agent, self.editor_agent],
             tasks=tasks,
             process=Process.sequential,
-            verbose=False,  # Set to False in production
+            verbose=True,  # Set to True for extensive logging
             memory=False,
             max_rpm=20,
-            step_callback=None,
-            task_callback=None
+            step_callback=self._log_step,
+            task_callback=self._log_task
         )
     
     def _execute_crew_with_timeout(self, crew: Crew, inputs: Dict[str, Any], timeout: int = 120):

@@ -1,12 +1,12 @@
 import datetime
 import functools
 import os
-from time import time
+import time
 import requests
 import logging
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from tmdbv3api import TMDb, Movie, Search
 from serpapi import GoogleSearch
 from crewai.tools import BaseTool
@@ -16,7 +16,7 @@ import urllib.parse
 # Define input schemas
 class MovieSearchInput(BaseModel):
     query: str = Field(description="Search query for movies")
-    year: Optional[int] = Field(None, description="Release year filter")
+    year: Optional[Union[int, str]] = Field(None, description="Release year filter")
     genre: Optional[str] = Field(None, description="Genre filter")
 
 class MovieDetailsInput(BaseModel):
@@ -91,7 +91,7 @@ class MovieSearchTool(BaseTool):
     args_schema: type[BaseModel] = MovieSearchInput
     
     @cache_api_call(ttl=300)  # Cache results for 5 minutes
-    def _run(self, query: str, year: Optional[int] = None, genre: Optional[str] = None) -> str:
+    def _run(self, query: str, year: Optional[Union[int, str]] = None, genre: Optional[str] = None) -> str:
         try:
             # Initialize TMDB inside _run method
             api_key = os.getenv('TMDB_API_KEY')
@@ -109,14 +109,28 @@ class MovieSearchTool(BaseTool):
             }
 
             if year:
-                params['year'] = year
+                # Handle string 'None' or invalid strings safely
+                if isinstance(year, str):
+                    if year.lower() == 'none' or not year.strip():
+                        year = None
+                    elif year.isdigit():
+                        year = int(year)
+                    else:
+                        # Try to clean up string if it contains other chars, or ignore
+                        try:
+                            year = int(''.join(filter(str.isdigit, year)))
+                        except:
+                            year = None
+                            
+                if year:
+                    params['year'] = year
                 
             logger.debug(f"MovieSearchTool._run: searching movies with params: {params}")
             
             # Perform search (use pooled session)
-            start = time()
+            start = time.time()
             response = _session.get(search_url, params=params, timeout=10)
-            duration = time() - start
+            duration = time.time() - start
             logger.debug(f"MovieSearchTool._run: TMDB responded status={getattr(response,'status_code',None)} in {duration:.3f}s")
             if response.status_code != 200:
                 return self._get_fallback_movies(query, genre, f"API error: {response.status_code}")
@@ -140,7 +154,8 @@ class MovieSearchTool(BaseTool):
                     f"Rating: {movie['rating']}/10\n"
                     f"Genre: {movie['genre']}\n"
                     f"Description: {movie['description']}\n"
-                    f"ID: {movie['id']}"
+                    f"ID: {movie['id']}\n"
+                    f"Image: {movie['image_url']}"
                 )
             
             return "\n---\n".join(formatted_results)
@@ -150,9 +165,16 @@ class MovieSearchTool(BaseTool):
 
     def _get_basic_movie_details(self, movie) -> Optional[Dict]:
         try:
+            # Handle both dictionary and object (backwards compatibility)
+            def get_val(obj, key, default=None):
+                if isinstance(obj, dict):
+                    return obj.get(key, default)
+                return getattr(obj, key, default)
+
             # Get genre names from genre IDs
             genre_names = []
-            if hasattr(movie, 'genre_ids') and movie.genre_ids:
+            genre_ids = get_val(movie, 'genre_ids', [])
+            if genre_ids:
                 genre_map = {
                     28: "Action", 12: "Adventure", 16: "Animation", 35: "Comedy",
                     80: "Crime", 99: "Documentary", 18: "Drama", 10751: "Family",
@@ -160,26 +182,30 @@ class MovieSearchTool(BaseTool):
                     9648: "Mystery", 10749: "Romance", 878: "Science Fiction",
                     10770: "TV Movie", 53: "Thriller", 10752: "War", 37: "Western"
                 }
-                for genre_id in movie.genre_ids[:3]:
+                for genre_id in genre_ids[:3]:
                     if genre_id in genre_map:
                         genre_names.append(genre_map[genre_id])
             
             # Safely get release year
+            release_date = get_val(movie, 'release_date')
             release_year = 'N/A'
-            if hasattr(movie, 'release_date') and movie.release_date:
+            if release_date:
                 try:
-                    release_year = str(movie.release_date)[:4]  # Convert to string first
+                    release_year = str(release_date)[:4]
                 except:
                     release_year = 'N/A'
             
+            poster_path = get_val(movie, 'poster_path')
+            vote_average = get_val(movie, 'vote_average')
+            
             return {
-                'id': getattr(movie, 'id', 'N/A'),
-                'title': getattr(movie, 'title', 'Unknown Title'),
+                'id': get_val(movie, 'id', 'N/A'),
+                'title': get_val(movie, 'title', 'Unknown Title'),
                 'year': release_year,
-                'rating': round(movie.vote_average, 1) if hasattr(movie, 'vote_average') and movie.vote_average else 'N/A',
+                'rating': round(vote_average, 1) if vote_average is not None else 'N/A',
                 'genre': ', '.join(genre_names) if genre_names else 'Unknown',
-                'description': getattr(movie, 'overview', 'No description available'),
-                'image_url': f"https://image.tmdb.org/t/p/w500{movie.poster_path}" if hasattr(movie, 'poster_path') and movie.poster_path else None
+                'description': get_val(movie, 'overview', 'No description available'),
+                'image_url': f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
             }
         except Exception as e:
             print(f"Error getting basic movie details: {e}")
@@ -209,9 +235,9 @@ class MovieDetailsTool(BaseTool):
             }
             
             logger.debug(f"MovieDetailsTool._run: getting details for movie_id={movie_id}")
-            start = time()
+            start = time.time()
             response = _session.get(movie_url, params=params, timeout=10)
-            duration = time() - start
+            duration = time.time() - start
             logger.debug(f"MovieDetailsTool._run: TMDB responded status={getattr(response,'status_code',None)} in {duration:.3f}s")
             
             if response.status_code != 200:
@@ -223,7 +249,8 @@ class MovieDetailsTool(BaseTool):
             title = movie_data.get('title', 'Unknown Title')
             release_date = movie_data.get('release_date', '')
             release_year = release_date[:4] if release_date else 'N/A'
-            rating = round(movie_data.get('vote_average', 0), 1)
+            vote_average = movie_data.get('vote_average')
+            rating = round(vote_average, 1) if vote_average is not None else 'N/A'
             
             # Get genres
             genres = [genre.get('name', '') for genre in movie_data.get('genres', [])[:3]]
@@ -238,13 +265,17 @@ class MovieDetailsTool(BaseTool):
             cast_names = [actor.get('name', '') for actor in cast[:3]]
             cast_str = ', '.join([c for c in cast_names if c])
             
+            poster_path = movie_data.get('poster_path')
+            image_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+
             return (
                 f"Title: {title} ({release_year})\n"
                 f"Rating: {rating}/10\n"
                 f"Genre: {genre_str if genre_str else 'Unknown'}\n"
                 f"Duration: {duration}\n"
                 f"Description: {description}\n"
-                f"Cast: {cast_str if cast_str else 'N/A'}"
+                f"Cast: {cast_str if cast_str else 'N/A'}\n"
+                f"Image: {image_url}"
             )
             
         except Exception as e:
@@ -273,9 +304,9 @@ class PopularMoviesTool(BaseTool):
             }
             
             logger.debug("PopularMoviesTool._run: getting popular movies via direct API")
-            start = time()
+            start = time.time()
             response = _session.get(popular_url, params=params, timeout=10)
-            duration = time() - start
+            duration = time.time() - start
             logger.debug(f"PopularMoviesTool._run: TMDB responded status={getattr(response,'status_code',None)} in {duration:.3f}s")
             
             if response.status_code != 200:
@@ -332,10 +363,11 @@ class PopularMoviesTool(BaseTool):
             release_date = movie_data.get('release_date', '')
             release_year = release_date[:4] if release_date else 'N/A'
             
+            vote_average = movie_data.get('vote_average')
             return {
                 'title': movie_data.get('title', 'Unknown Title'),
                 'year': release_year,
-                'rating': round(movie_data.get('vote_average', 0), 1),
+                'rating': round(vote_average, 1) if vote_average is not None else 'N/A',
                 'genre': ', '.join(genre_names) if genre_names else 'Unknown',
                 'description': movie_data.get('overview', 'No description available'),
                 'image_url': f"https://image.tmdb.org/t/p/w500{movie_data.get('poster_path')}" if movie_data.get('poster_path') else None
@@ -367,9 +399,9 @@ class BookSearchTool(BaseTool):
             }
             
             logger.debug(f"BookSearchTool._run: searching books q={query}")
-            start = time()
+            start = time.time()
             response = _session.get('https://www.googleapis.com/books/v1/volumes', params=params, timeout=10)
-            duration = time() - start
+            duration = time.time() - start
             logger.debug(f"BookSearchTool._run: Google Books responded status={getattr(response,'status_code',None)} in {duration:.3f}s")
             response.raise_for_status()
             data = response.json()
@@ -392,7 +424,8 @@ class BookSearchTool(BaseTool):
                     f"Published: {book['published_year']}\n"
                     f"Genre: {book['genre']}\n"
                     f"Rating: {book['rating']}/5\n"
-                    f"Description: {book['description'][:200]}..."
+                    f"Description: {book['description'][:200]}...\n"
+                    f"Image: {book['image_url']}"
                 )
             
             return "\n---\n".join(formatted_results)
@@ -412,7 +445,7 @@ class BookSearchTool(BaseTool):
                 'published_year': volume_info.get('publishedDate', '')[:4] if volume_info.get('publishedDate') else 'N/A',
                 'genre': ', '.join(volume_info.get('categories', ['General'])),
                 'description': volume_info.get('description', 'No description available.')[:300],
-                'rating': volume_info.get('averageRating', 'N/A'),
+                'rating': volume_info.get('averageRating') if volume_info.get('averageRating') is not None else 'N/A',
                 'image_url': volume_info.get('imageLinks', {}).get('thumbnail'),
             }
         except Exception as e:
@@ -433,9 +466,9 @@ class BookDetailsTool(BaseTool):
                 return "Google Books API key not configured. Please set GOOGLE_BOOKS_API_KEY in your environment variables."
                 
             logger.debug(f"BookDetailsTool._run: fetching book_id={book_id}")
-            start = time()
+            start = time.time()
             response = _session.get(f'https://www.googleapis.com/books/v1/volumes/{book_id}', timeout=10)
-            duration = time() - start
+            duration = time.time() - start
             logger.debug(f"BookDetailsTool._run: Google Books responded status={getattr(response,'status_code',None)} in {duration:.3f}s")
             response.raise_for_status()
             data = response.json()
@@ -452,7 +485,8 @@ class BookDetailsTool(BaseTool):
                 f"Rating: {book_info['rating']}/5\n"
                 f"Pages: {book_info.get('page_count', 'N/A')}\n"
                 f"Publisher: {book_info.get('publisher', 'Unknown')}\n"
-                f"Description: {book_info['description']}"
+                f"Description: {book_info['description']}\n"
+                f"Image: {book_info.get('image_url')}"
             )
         except requests.exceptions.RequestException as e:
             return f"Network error getting book details: {str(e)}"
@@ -469,7 +503,7 @@ class BookDetailsTool(BaseTool):
                 'published_year': volume_info.get('publishedDate', '')[:4] if volume_info.get('publishedDate') else 'N/A',
                 'genre': ', '.join(volume_info.get('categories', ['General'])),
                 'description': volume_info.get('description', 'No description available.'),
-                'rating': volume_info.get('averageRating', 'N/A'),
+                'rating': volume_info.get('averageRating') if volume_info.get('averageRating') is not None else 'N/A',
                 'page_count': volume_info.get('pageCount'),
                 'publisher': volume_info.get('publisher', 'Unknown'),
                 'image_url': volume_info.get('imageLinks', {}).get('thumbnail'),
