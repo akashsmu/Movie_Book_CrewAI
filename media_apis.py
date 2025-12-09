@@ -513,7 +513,7 @@ class DiscoverMoviesTool(BaseTool):
                 formatted_results.append(
                     f"Title: {movie.get('title')}\n"
                     f"Year: {str(movie.get('release_date', 'N/A'))[:4]}\n"
-                    f"Rating: {movie.get('vote_average', 'N/A')}/10\n"
+                    f"Rating: {round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else 'N/A'}/10\n"
                     f"Description: {movie.get('overview', 'No description available')}\n"
                     f"Image: {image_url}\n"
                     f"Trailer: {trailer_url if trailer_url else 'N/A'}"
@@ -666,7 +666,7 @@ class BookDetailsTool(BaseTool):
                 'published_year': volume_info.get('publishedDate', '')[:4] if volume_info.get('publishedDate') else 'N/A',
                 'genre': ', '.join(volume_info.get('categories', ['General'])),
                 'description': volume_info.get('description', 'No description available.'),
-                'rating': volume_info.get('averageRating') if volume_info.get('averageRating') is not None else 'N/A',
+                'rating': round(volume_info.get('averageRating'), 1) if volume_info.get('averageRating') is not None else 'N/A',
                 'page_count': volume_info.get('pageCount'),
                 'publisher': volume_info.get('publisher', 'Unknown'),
                 'image_url': volume_info.get('imageLinks', {}).get('thumbnail'),
