@@ -762,14 +762,14 @@ class MediaRecommendationCrew:
         """Normalize rating to numeric format"""
         rating = rec.get('rating')
         if isinstance(rating, (int, float)):
-            rec['rating'] = float(rating)
+            rec['rating'] = round(float(rating), 1)
         elif isinstance(rating, str):
             try:
                 # Handle "8.5/10", "4.5/5", etc.
                 if '/' in rating:
-                    rec['rating'] = float(rating.split('/')[0].strip())
+                    rec['rating'] = round(float(rating.split('/')[0].strip()), 1)
                 else:
-                    rec['rating'] = float(rating)
+                    rec['rating'] = round(float(rating), 1)
             except (ValueError, AttributeError):
                 rec['rating'] = 'N/A'
     
