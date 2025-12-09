@@ -650,3 +650,371 @@
 2025-12-09 16:02:53,490 - media_crew - INFO - Validated 5 JSON recommendations
 2025-12-09 16:02:53,490 - media_crew - INFO - Successfully processed 5 recommendations
 2025-12-09 16:02:53,491 - media_crew - INFO - Crew execution completed in 202.14s. Returning 5 recommendations.
+2025-12-09 16:22:30,249 - media_crew - INFO - All agents initialized successfully
+2025-12-09 16:22:30,252 - media_crew - INFO - All tasks initialized successfully
+2025-12-09 16:22:30,252 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-12-09 16:22:30,252 - media_crew - INFO - Starting crew execution for request: books similar to good girls guide to murder...
+2025-12-09 16:22:30,255 - media_crew - INFO - Starting crew kickoff (with timeout protection)...
+2025-12-09 16:22:32,817 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:22:32,835 - root - INFO - OpenAI API usage: {'prompt_tokens': 393, 'completion_tokens': 58, 'total_tokens': 451}
+2025-12-09 16:22:35,913 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:22:35,931 - root - INFO - OpenAI API usage: {'prompt_tokens': 657, 'completion_tokens': 89, 'total_tokens': 746}
+2025-12-09 16:22:52,624 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:22:52,643 - root - INFO - OpenAI API usage: {'prompt_tokens': 984, 'completion_tokens': 681, 'total_tokens': 1665}
+2025-12-09 16:23:06,978 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:23:06,996 - root - INFO - OpenAI API usage: {'prompt_tokens': 1313, 'completion_tokens': 716, 'total_tokens': 2029}
+2025-12-09 16:23:22,106 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:23:22,108 - root - INFO - OpenAI API usage: {'prompt_tokens': 1642, 'completion_tokens': 663, 'total_tokens': 2305}
+2025-12-09 16:23:30,731 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:23:30,732 - root - INFO - OpenAI API usage: {'prompt_tokens': 1971, 'completion_tokens': 325, 'total_tokens': 2296}
+2025-12-09 16:23:37,707 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:23:37,728 - root - INFO - OpenAI API usage: {'prompt_tokens': 2300, 'completion_tokens': 325, 'total_tokens': 2625}
+2025-12-09 16:23:45,138 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:23:45,148 - root - INFO - OpenAI API usage: {'prompt_tokens': 2629, 'completion_tokens': 325, 'total_tokens': 2954}
+2025-12-09 16:23:52,422 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:23:52,430 - root - INFO - OpenAI API usage: {'prompt_tokens': 2958, 'completion_tokens': 325, 'total_tokens': 3283}
+2025-12-09 16:23:59,427 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:23:59,442 - root - INFO - OpenAI API usage: {'prompt_tokens': 3287, 'completion_tokens': 325, 'total_tokens': 3612}
+2025-12-09 16:24:05,577 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:24:05,593 - root - INFO - OpenAI API usage: {'prompt_tokens': 3616, 'completion_tokens': 325, 'total_tokens': 3941}
+2025-12-09 16:24:18,172 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:24:18,178 - root - INFO - OpenAI API usage: {'prompt_tokens': 4307, 'completion_tokens': 527, 'total_tokens': 4834}
+2025-12-09 16:24:28,151 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:24:28,155 - root - INFO - OpenAI API usage: {'prompt_tokens': 976, 'completion_tokens': 505, 'total_tokens': 1481}
+2025-12-09 16:24:28,160 - media_crew - INFO - Crew kickoff completed in 117.90s
+2025-12-09 16:24:28,161 - media_crew - INFO - Processing crew result...
+2025-12-09 16:24:28,161 - media_crew - INFO - Successfully extracted JSON from result
+2025-12-09 16:24:28,161 - media_crew - INFO - Validated 3 JSON recommendations
+2025-12-09 16:24:28,162 - media_crew - INFO - Successfully processed 3 recommendations
+2025-12-09 16:24:28,162 - media_crew - INFO - Crew execution completed in 117.91s. Returning 3 recommendations.
+2025-12-09 16:29:50,962 - media_crew - INFO - All agents initialized successfully
+2025-12-09 16:29:50,962 - media_crew - INFO - All tasks initialized successfully
+2025-12-09 16:29:50,962 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-12-09 16:29:50,962 - media_crew - INFO - Starting crew execution for request: books similar to good girls guide to murder...
+2025-12-09 16:29:50,965 - media_crew - INFO - Starting crew kickoff (with timeout protection)...
+2025-12-09 16:29:53,742 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:29:53,769 - root - INFO - OpenAI API usage: {'prompt_tokens': 393, 'completion_tokens': 59, 'total_tokens': 452}
+2025-12-09 16:29:56,304 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:29:56,321 - root - INFO - OpenAI API usage: {'prompt_tokens': 657, 'completion_tokens': 63, 'total_tokens': 720}
+2025-12-09 16:30:06,849 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:30:06,850 - root - INFO - OpenAI API usage: {'prompt_tokens': 1358, 'completion_tokens': 536, 'total_tokens': 1894}
+2025-12-09 16:30:18,464 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:30:18,473 - root - INFO - OpenAI API usage: {'prompt_tokens': 957, 'completion_tokens': 570, 'total_tokens': 1527}
+2025-12-09 16:30:18,476 - media_crew - INFO - Crew kickoff completed in 27.51s
+2025-12-09 16:30:18,476 - media_crew - INFO - Processing crew result...
+2025-12-09 16:30:18,476 - media_crew - INFO - Successfully extracted JSON from result
+2025-12-09 16:30:18,476 - media_crew - INFO - Validated 3 JSON recommendations
+2025-12-09 16:30:20,206 - media_crew - INFO - Successfully processed 3 recommendations
+2025-12-09 16:30:20,206 - media_crew - INFO - Crew execution completed in 29.24s. Returning 3 recommendations.
+2025-12-09 16:30:56,445 - media_crew - INFO - All agents initialized successfully
+2025-12-09 16:30:56,446 - media_crew - INFO - All tasks initialized successfully
+2025-12-09 16:30:56,446 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-12-09 16:30:56,446 - media_crew - INFO - Starting crew execution for request: books similar to good girls guide to murder...
+2025-12-09 16:30:56,448 - media_crew - INFO - Starting crew kickoff (with timeout protection)...
+2025-12-09 16:30:58,280 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:30:58,302 - root - INFO - OpenAI API usage: {'prompt_tokens': 393, 'completion_tokens': 59, 'total_tokens': 452}
+2025-12-09 16:31:22,702 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:31:22,722 - root - INFO - OpenAI API usage: {'prompt_tokens': 668, 'completion_tokens': 1200, 'total_tokens': 1868}
+2025-12-09 16:31:43,149 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:31:43,153 - root - INFO - OpenAI API usage: {'prompt_tokens': 1365, 'completion_tokens': 1139, 'total_tokens': 2504}
+2025-12-09 16:32:05,778 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:32:05,778 - root - INFO - OpenAI API usage: {'prompt_tokens': 1513, 'completion_tokens': 1189, 'total_tokens': 2702}
+2025-12-09 16:32:26,873 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:32:26,874 - root - INFO - OpenAI API usage: {'prompt_tokens': 2001, 'completion_tokens': 1010, 'total_tokens': 3011}
+2025-12-09 16:32:34,889 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:32:34,907 - root - INFO - OpenAI API usage: {'prompt_tokens': 2084, 'completion_tokens': 405, 'total_tokens': 2489}
+2025-12-09 16:32:43,958 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:32:43,972 - root - INFO - OpenAI API usage: {'prompt_tokens': 2157, 'completion_tokens': 369, 'total_tokens': 2526}
+2025-12-09 16:33:05,337 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:33:05,367 - root - INFO - OpenAI API usage: {'prompt_tokens': 2652, 'completion_tokens': 1106, 'total_tokens': 3758}
+2025-12-09 16:33:14,903 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:33:14,903 - root - INFO - OpenAI API usage: {'prompt_tokens': 2801, 'completion_tokens': 446, 'total_tokens': 3247}
+2025-12-09 16:33:22,242 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:33:22,260 - root - INFO - OpenAI API usage: {'prompt_tokens': 2971, 'completion_tokens': 389, 'total_tokens': 3360}
+2025-12-09 16:33:26,469 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:33:26,471 - root - INFO - OpenAI API usage: {'prompt_tokens': 3366, 'completion_tokens': 167, 'total_tokens': 3533}
+2025-12-09 16:33:40,612 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:33:40,631 - root - INFO - OpenAI API usage: {'prompt_tokens': 3558, 'completion_tokens': 611, 'total_tokens': 4169}
+2025-12-09 16:33:51,234 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:33:51,240 - root - INFO - OpenAI API usage: {'prompt_tokens': 1060, 'completion_tokens': 590, 'total_tokens': 1650}
+2025-12-09 16:33:51,242 - media_crew - INFO - Crew kickoff completed in 174.79s
+2025-12-09 16:33:51,243 - media_crew - INFO - Processing crew result...
+2025-12-09 16:33:51,243 - media_crew - INFO - Successfully extracted JSON from result
+2025-12-09 16:33:51,243 - media_crew - INFO - Validated 3 JSON recommendations
+2025-12-09 16:33:51,243 - media_crew - INFO - Successfully processed 3 recommendations
+2025-12-09 16:33:51,243 - media_crew - INFO - Crew execution completed in 174.80s. Returning 3 recommendations.
+2025-12-09 16:35:13,962 - media_crew - INFO - All agents initialized successfully
+2025-12-09 16:35:13,962 - media_crew - INFO - All tasks initialized successfully
+2025-12-09 16:35:13,962 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-12-09 16:35:13,962 - media_crew - INFO - Starting crew execution for request: exciting rom-com ...
+2025-12-09 16:35:13,967 - media_crew - INFO - Starting crew kickoff (with timeout protection)...
+2025-12-09 16:35:15,254 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:35:15,282 - root - INFO - OpenAI API usage: {'prompt_tokens': 493, 'completion_tokens': 44, 'total_tokens': 537}
+2025-12-09 16:35:16,659 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:35:16,661 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:35:16,663 - root - INFO - OpenAI API usage: {'prompt_tokens': 733, 'completion_tokens': 60, 'total_tokens': 793}
+2025-12-09 16:35:16,681 - root - INFO - OpenAI API usage: {'prompt_tokens': 663, 'completion_tokens': 50, 'total_tokens': 713}
+2025-12-09 16:35:19,550 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:35:19,577 - root - INFO - OpenAI API usage: {'prompt_tokens': 731, 'completion_tokens': 71, 'total_tokens': 802}
+2025-12-09 16:35:21,731 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:35:21,746 - root - INFO - OpenAI API usage: {'prompt_tokens': 806, 'completion_tokens': 66, 'total_tokens': 872}
+2025-12-09 16:35:24,593 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:35:24,612 - root - INFO - OpenAI API usage: {'prompt_tokens': 1766, 'completion_tokens': 74, 'total_tokens': 1840}
+2025-12-09 16:35:27,850 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:35:27,881 - root - INFO - OpenAI API usage: {'prompt_tokens': 807, 'completion_tokens': 604, 'total_tokens': 1411}
+2025-12-09 16:35:40,132 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:35:40,149 - root - INFO - OpenAI API usage: {'prompt_tokens': 1844, 'completion_tokens': 938, 'total_tokens': 2782}
+2025-12-09 16:35:44,306 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:35:44,308 - root - INFO - OpenAI API usage: {'prompt_tokens': 1208, 'completion_tokens': 1072, 'total_tokens': 2280}
+2025-12-09 16:35:51,495 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:35:51,515 - root - INFO - OpenAI API usage: {'prompt_tokens': 1611, 'completion_tokens': 404, 'total_tokens': 2015}
+2025-12-09 16:35:58,920 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:35:58,938 - root - INFO - OpenAI API usage: {'prompt_tokens': 1785, 'completion_tokens': 408, 'total_tokens': 2193}
+2025-12-09 16:36:00,337 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:36:00,346 - root - INFO - OpenAI API usage: {'prompt_tokens': 2197, 'completion_tokens': 56, 'total_tokens': 2253}
+2025-12-09 16:36:03,278 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:36:03,281 - root - INFO - OpenAI API usage: {'prompt_tokens': 2874, 'completion_tokens': 1361, 'total_tokens': 4235}
+2025-12-09 16:36:11,747 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:36:11,749 - root - INFO - OpenAI API usage: {'prompt_tokens': 2643, 'completion_tokens': 403, 'total_tokens': 3046}
+2025-12-09 16:36:19,669 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:36:19,686 - root - INFO - OpenAI API usage: {'prompt_tokens': 2909, 'completion_tokens': 405, 'total_tokens': 3314}
+2025-12-09 16:36:28,951 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:36:28,953 - root - INFO - OpenAI API usage: {'prompt_tokens': 3654, 'completion_tokens': 1408, 'total_tokens': 5062}
+2025-12-09 16:36:31,188 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:36:31,203 - root - INFO - OpenAI API usage: {'prompt_tokens': 4105, 'completion_tokens': 80, 'total_tokens': 4185}
+2025-12-09 16:36:31,269 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:36:31,273 - root - INFO - OpenAI API usage: {'prompt_tokens': 3133, 'completion_tokens': 640, 'total_tokens': 3773}
+2025-12-09 16:36:59,615 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:36:59,634 - root - INFO - OpenAI API usage: {'prompt_tokens': 4189, 'completion_tokens': 1627, 'total_tokens': 5816}
+2025-12-09 16:37:15,817 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:37:15,819 - root - INFO - OpenAI API usage: {'prompt_tokens': 4575, 'completion_tokens': 920, 'total_tokens': 5495}
+2025-12-09 16:37:31,621 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:37:31,623 - root - INFO - OpenAI API usage: {'prompt_tokens': 4898, 'completion_tokens': 765, 'total_tokens': 5663}
+2025-12-09 16:37:44,480 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:37:44,486 - root - INFO - OpenAI API usage: {'prompt_tokens': 4898, 'completion_tokens': 702, 'total_tokens': 5600}
+2025-12-09 16:38:02,751 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:38:02,752 - root - INFO - OpenAI API usage: {'prompt_tokens': 1734, 'completion_tokens': 838, 'total_tokens': 2572}
+2025-12-09 16:38:02,761 - media_crew - INFO - Crew kickoff completed in 168.79s
+2025-12-09 16:38:02,761 - media_crew - INFO - Processing crew result...
+2025-12-09 16:38:02,762 - media_crew - INFO - Successfully extracted JSON from result
+2025-12-09 16:38:02,774 - media_crew - INFO - Validated 4 JSON recommendations
+2025-12-09 16:38:04,605 - media_crew - INFO - Successfully processed 4 recommendations
+2025-12-09 16:38:04,606 - media_crew - INFO - Crew execution completed in 170.64s. Returning 4 recommendations.
+2025-12-09 16:41:23,271 - media_crew - INFO - All agents initialized successfully
+2025-12-09 16:41:23,272 - media_crew - INFO - All tasks initialized successfully
+2025-12-09 16:41:23,272 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-12-09 16:41:23,272 - media_crew - INFO - Starting crew execution for request: exciting sci-fi thriller...
+2025-12-09 16:41:23,274 - media_crew - INFO - Starting crew kickoff (with timeout protection)...
+2025-12-09 16:41:24,671 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:41:24,688 - root - INFO - OpenAI API usage: {'prompt_tokens': 489, 'completion_tokens': 45, 'total_tokens': 534}
+2025-12-09 16:41:24,688 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:41:24,688 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-09 16:41:27,136 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:41:27,154 - root - INFO - OpenAI API usage: {'prompt_tokens': 664, 'completion_tokens': 54, 'total_tokens': 718}
+2025-12-09 16:41:28,205 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:41:28,206 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:41:30,204 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:41:30,221 - root - INFO - OpenAI API usage: {'prompt_tokens': 736, 'completion_tokens': 70, 'total_tokens': 806}
+2025-12-09 16:41:31,337 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:41:31,338 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:41:33,054 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:41:33,082 - root - INFO - OpenAI API usage: {'prompt_tokens': 810, 'completion_tokens': 68, 'total_tokens': 878}
+2025-12-09 16:41:34,021 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:41:34,021 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:41:37,448 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:41:37,462 - root - INFO - OpenAI API usage: {'prompt_tokens': 734, 'completion_tokens': 751, 'total_tokens': 1485}
+2025-12-09 16:41:37,602 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:41:37,602 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:41:51,011 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:41:51,028 - root - INFO - OpenAI API usage: {'prompt_tokens': 890, 'completion_tokens': 858, 'total_tokens': 1748}
+2025-12-09 16:41:51,104 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:41:51,105 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:41:58,922 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:41:58,924 - root - INFO - OpenAI API usage: {'prompt_tokens': 1302, 'completion_tokens': 1178, 'total_tokens': 2480}
+2025-12-09 16:42:02,719 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:02,719 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:08,943 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:42:08,960 - root - INFO - OpenAI API usage: {'prompt_tokens': 1192, 'completion_tokens': 1012, 'total_tokens': 2204}
+2025-12-09 16:42:08,978 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:08,979 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:25,332 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:42:25,333 - root - INFO - OpenAI API usage: {'prompt_tokens': 1936, 'completion_tokens': 1298, 'total_tokens': 3234}
+2025-12-09 16:42:25,504 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:25,504 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:29,950 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:42:29,951 - root - INFO - OpenAI API usage: {'prompt_tokens': 2408, 'completion_tokens': 234, 'total_tokens': 2642}
+2025-12-09 16:42:30,135 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:30,136 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:32,480 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:42:32,500 - root - INFO - OpenAI API usage: {'prompt_tokens': 1605, 'completion_tokens': 1527, 'total_tokens': 3132}
+2025-12-09 16:42:32,523 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:32,523 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:38,712 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:42:38,728 - root - INFO - OpenAI API usage: {'prompt_tokens': 2014, 'completion_tokens': 404, 'total_tokens': 2418}
+2025-12-09 16:42:38,741 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:38,741 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:46,595 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:42:46,609 - root - INFO - OpenAI API usage: {'prompt_tokens': 3708, 'completion_tokens': 852, 'total_tokens': 4560}
+2025-12-09 16:42:46,744 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:42:46,761 - root - INFO - OpenAI API usage: {'prompt_tokens': 2423, 'completion_tokens': 404, 'total_tokens': 2827}
+2025-12-09 16:42:46,781 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:46,781 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:46,804 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:46,804 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:53,504 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:42:53,524 - root - INFO - OpenAI API usage: {'prompt_tokens': 2832, 'completion_tokens': 405, 'total_tokens': 3237}
+2025-12-09 16:42:53,543 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:53,545 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:59,687 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:42:59,705 - root - INFO - OpenAI API usage: {'prompt_tokens': 3241, 'completion_tokens': 405, 'total_tokens': 3646}
+2025-12-09 16:42:59,719 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:42:59,721 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:43:06,053 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:43:06,065 - root - INFO - OpenAI API usage: {'prompt_tokens': 3650, 'completion_tokens': 405, 'total_tokens': 4055}
+2025-12-09 16:43:06,086 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:43:06,088 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:43:08,597 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:43:08,621 - root - INFO - OpenAI API usage: {'prompt_tokens': 4177, 'completion_tokens': 1118, 'total_tokens': 5295}
+2025-12-09 16:43:08,621 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:43:08,622 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-09 16:43:12,447 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:43:12,448 - root - INFO - OpenAI API usage: {'prompt_tokens': 4059, 'completion_tokens': 405, 'total_tokens': 4464}
+2025-12-09 16:43:12,459 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:43:12,462 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:43:22,522 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:43:22,541 - root - INFO - OpenAI API usage: {'prompt_tokens': 4910, 'completion_tokens': 578, 'total_tokens': 5488}
+2025-12-09 16:43:32,357 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:43:32,381 - root - INFO - OpenAI API usage: {'prompt_tokens': 4910, 'completion_tokens': 553, 'total_tokens': 5463}
+2025-12-09 16:43:32,386 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:43:32,387 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-09 16:43:55,666 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:43:55,678 - root - INFO - OpenAI API usage: {'prompt_tokens': 2105, 'completion_tokens': 1211, 'total_tokens': 3316}
+2025-12-09 16:43:55,678 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:43:55,679 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-09 16:43:55,700 - media_crew - INFO - Crew kickoff completed in 152.43s
+2025-12-09 16:43:55,702 - media_crew - INFO - Processing crew result...
+2025-12-09 16:43:55,705 - media_crew - INFO - Successfully extracted JSON from result
+2025-12-09 16:43:55,707 - media_crew - INFO - Validated 5 JSON recommendations
+2025-12-09 16:43:58,017 - media_crew - INFO - Successfully processed 5 recommendations
+2025-12-09 16:43:58,017 - media_crew - INFO - Crew execution completed in 154.75s. Returning 5 recommendations.
+2025-12-09 16:44:45,898 - media_crew - INFO - All agents initialized successfully
+2025-12-09 16:44:45,898 - media_crew - INFO - All tasks initialized successfully
+2025-12-09 16:44:45,898 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-12-09 16:44:45,898 - media_crew - INFO - Starting crew execution for request: books similar to good girls guide to murder...
+2025-12-09 16:44:45,900 - media_crew - INFO - Starting crew kickoff (with timeout protection)...
+2025-12-09 16:44:47,655 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:44:47,685 - root - INFO - OpenAI API usage: {'prompt_tokens': 393, 'completion_tokens': 59, 'total_tokens': 452}
+2025-12-09 16:44:47,686 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:44:47,687 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-09 16:44:48,788 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:44:48,807 - root - INFO - OpenAI API usage: {'prompt_tokens': 668, 'completion_tokens': 53, 'total_tokens': 721}
+2025-12-09 16:44:49,896 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:44:49,896 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:45:08,876 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:45:08,877 - root - INFO - OpenAI API usage: {'prompt_tokens': 1359, 'completion_tokens': 1073, 'total_tokens': 2432}
+2025-12-09 16:45:09,072 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:45:09,072 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:45:28,113 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:45:28,128 - root - INFO - OpenAI API usage: {'prompt_tokens': 1507, 'completion_tokens': 1099, 'total_tokens': 2606}
+2025-12-09 16:45:29,053 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:45:29,053 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:45:44,305 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:45:44,306 - root - INFO - OpenAI API usage: {'prompt_tokens': 1895, 'completion_tokens': 924, 'total_tokens': 2819}
+2025-12-09 16:45:45,290 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:45:45,290 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:45:53,312 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:45:53,332 - root - INFO - OpenAI API usage: {'prompt_tokens': 1961, 'completion_tokens': 459, 'total_tokens': 2420}
+2025-12-09 16:45:54,305 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:45:54,305 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:45:58,744 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:45:58,745 - root - INFO - OpenAI API usage: {'prompt_tokens': 2145, 'completion_tokens': 297, 'total_tokens': 2442}
+2025-12-09 16:45:59,708 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:45:59,709 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:46:17,624 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:46:17,641 - root - INFO - OpenAI API usage: {'prompt_tokens': 2869, 'completion_tokens': 1053, 'total_tokens': 3922}
+2025-12-09 16:46:17,794 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:46:17,794 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:46:24,261 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:46:24,277 - root - INFO - OpenAI API usage: {'prompt_tokens': 3290, 'completion_tokens': 361, 'total_tokens': 3651}
+2025-12-09 16:46:24,478 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:46:24,478 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:47:31,565 - media_crew - INFO - All agents initialized successfully
+2025-12-09 16:47:31,565 - media_crew - INFO - All tasks initialized successfully
+2025-12-09 16:47:31,565 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-12-09 16:47:31,565 - media_crew - INFO - Starting crew execution for request: books similar to good girls guide to murder...
+2025-12-09 16:47:31,567 - media_crew - INFO - Starting crew kickoff (with timeout protection)...
+2025-12-09 16:47:33,159 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:47:33,181 - root - INFO - OpenAI API usage: {'prompt_tokens': 393, 'completion_tokens': 59, 'total_tokens': 452}
+2025-12-09 16:47:33,182 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:47:33,182 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-09 16:47:55,980 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:47:55,995 - root - INFO - OpenAI API usage: {'prompt_tokens': 668, 'completion_tokens': 1183, 'total_tokens': 1851}
+2025-12-09 16:47:57,021 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:47:57,022 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:48:18,588 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:48:18,603 - root - INFO - OpenAI API usage: {'prompt_tokens': 1365, 'completion_tokens': 1190, 'total_tokens': 2555}
+2025-12-09 16:48:18,719 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:48:18,719 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:48:34,092 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:48:34,093 - root - INFO - OpenAI API usage: {'prompt_tokens': 1513, 'completion_tokens': 916, 'total_tokens': 2429}
+2025-12-09 16:48:35,022 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:48:35,022 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:48:40,544 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:48:40,564 - root - INFO - OpenAI API usage: {'prompt_tokens': 1898, 'completion_tokens': 379, 'total_tokens': 2277}
+2025-12-09 16:48:40,566 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:48:40,566 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:48:48,303 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:48:48,323 - root - INFO - OpenAI API usage: {'prompt_tokens': 1974, 'completion_tokens': 418, 'total_tokens': 2392}
+2025-12-09 16:48:49,247 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:48:49,247 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:48:51,147 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:48:51,172 - root - INFO - OpenAI API usage: {'prompt_tokens': 2036, 'completion_tokens': 61, 'total_tokens': 2097}
+2025-12-09 16:48:52,215 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:48:52,216 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:48:53,714 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:48:53,736 - root - INFO - OpenAI API usage: {'prompt_tokens': 2417, 'completion_tokens': 63, 'total_tokens': 2480}
+2025-12-09 16:48:54,572 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:48:54,573 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:49:02,374 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:49:02,403 - root - INFO - OpenAI API usage: {'prompt_tokens': 2581, 'completion_tokens': 391, 'total_tokens': 2972}
+2025-12-09 16:49:02,406 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:49:02,406 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:49:09,114 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:49:09,115 - root - INFO - OpenAI API usage: {'prompt_tokens': 2652, 'completion_tokens': 391, 'total_tokens': 3043}
+2025-12-09 16:49:09,119 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:49:09,119 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:49:11,367 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:49:11,373 - root - INFO - OpenAI API usage: {'prompt_tokens': 3038, 'completion_tokens': 94, 'total_tokens': 3132}
+2025-12-09 16:49:11,378 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:49:11,378 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:49:23,411 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:49:23,429 - root - INFO - OpenAI API usage: {'prompt_tokens': 3354, 'completion_tokens': 609, 'total_tokens': 3963}
+2025-12-09 16:49:23,430 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-09 16:49:36,560 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:49:36,566 - root - INFO - OpenAI API usage: {'prompt_tokens': 1058, 'completion_tokens': 598, 'total_tokens': 1656}
+2025-12-09 16:49:36,566 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:49:36,566 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-09 16:49:36,578 - media_crew - INFO - Crew kickoff completed in 125.01s
+2025-12-09 16:49:36,578 - media_crew - INFO - Processing crew result...
+2025-12-09 16:49:36,579 - media_crew - INFO - Successfully extracted JSON from result
+2025-12-09 16:49:36,579 - media_crew - INFO - Validated 3 JSON recommendations
+2025-12-09 16:49:36,579 - media_crew - INFO - Successfully processed 3 recommendations
+2025-12-09 16:49:36,579 - media_crew - INFO - Crew execution completed in 125.01s. Returning 3 recommendations.
+2025-12-09 16:51:26,435 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:51:26,475 - root - INFO - OpenAI API usage: {'prompt_tokens': 3753, 'completion_tokens': 16384, 'total_tokens': 20137}
+2025-12-09 16:51:26,735 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:51:26,740 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:51:39,525 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:51:39,544 - root - INFO - OpenAI API usage: {'prompt_tokens': 4521, 'completion_tokens': 739, 'total_tokens': 5260}
+2025-12-09 16:51:39,545 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:51:39,545 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-09 16:51:52,240 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-09 16:51:52,242 - root - INFO - OpenAI API usage: {'prompt_tokens': 1166, 'completion_tokens': 690, 'total_tokens': 1856}
+2025-12-09 16:51:52,242 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-09 16:51:52,242 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-09 16:51:52,254 - media_crew - INFO - Crew kickoff completed in 426.35s
+2025-12-09 16:51:52,254 - media_crew - INFO - Processing crew result...
+2025-12-09 16:51:52,255 - media_crew - INFO - Successfully extracted JSON from result
+2025-12-09 16:51:52,255 - media_crew - INFO - Validated 3 JSON recommendations
+2025-12-09 16:51:52,255 - media_crew - INFO - Successfully processed 3 recommendations
+2025-12-09 16:51:52,255 - media_crew - INFO - Crew execution completed in 426.36s. Returning 3 recommendations.
