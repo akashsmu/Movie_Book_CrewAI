@@ -3,6 +3,9 @@ import functools
 import os
 from time import time
 import requests
+import logging
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from typing import Any, Dict, List, Optional
 from tmdbv3api import TMDb, Movie, Search
 from serpapi import GoogleSearch
@@ -39,21 +42,42 @@ class TrendingMediaInput(BaseModel):
 # Simple in-memory cache for API responses
 _api_cache: Dict[str, Any] = {}
 
+# Module logger
+logger = logging.getLogger(__name__)
+
+
+# Shared HTTP session with retries and connection pooling
+_session = requests.Session()
+_retry = Retry(total=3, backoff_factor=0.3, status_forcelist=[500, 502, 503, 504])
+_adapter = HTTPAdapter(max_retries=_retry, pool_connections=10, pool_maxsize=10)
+_session.mount('https://', _adapter)
+_session.mount('http://', _adapter)
+
 def cache_api_call(ttl: int = 300):  # 5 minute cache
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             # Create cache key from function name and arguments
-            cache_key = f"{func.__name__}:{str(args)}:{str(kwargs)}"
-            
+            # If this is a bound method, drop `self` from the args when forming the key
+            key_args = args[1:] if (len(args) > 0 and hasattr(args[0], '__class__')) else args
+            cache_key = f"{func.__name__}:{str(key_args)}:{str(kwargs)}"
+
             # Check cache
             if cache_key in _api_cache:
                 cache_time, result = _api_cache[cache_key]
                 if time.time() - cache_time < ttl:
+                    logger.debug(f"cache_api_call: HIT {cache_key}")
                     return result
-            
+                else:
+                    logger.debug(f"cache_api_call: STALE {cache_key}")
+            else:
+                logger.debug(f"cache_api_call: MISS {cache_key}")
+
             # Call function and cache result
+            start = time.time()
             result = func(*args, **kwargs)
+            duration = time.time() - start
+            logger.debug(f"cache_api_call: CALL {func.__name__} took {duration:.3f}s")
             _api_cache[cache_key] = (time.time(), result)
             return result
         return wrapper
@@ -87,10 +111,13 @@ class MovieSearchTool(BaseTool):
             if year:
                 params['year'] = year
                 
-            print(f"🔍 Searching movies with params: {params}")
+            logger.debug(f"MovieSearchTool._run: searching movies with params: {params}")
             
-            # Perform search
-            response = requests.get(search_url, params=params, timeout=10)
+            # Perform search (use pooled session)
+            start = time()
+            response = _session.get(search_url, params=params, timeout=10)
+            duration = time() - start
+            logger.debug(f"MovieSearchTool._run: TMDB responded status={getattr(response,'status_code',None)} in {duration:.3f}s")
             if response.status_code != 200:
                 return self._get_fallback_movies(query, genre, f"API error: {response.status_code}")
             
@@ -151,7 +178,8 @@ class MovieSearchTool(BaseTool):
                 'year': release_year,
                 'rating': round(movie.vote_average, 1) if hasattr(movie, 'vote_average') and movie.vote_average else 'N/A',
                 'genre': ', '.join(genre_names) if genre_names else 'Unknown',
-                'description': getattr(movie, 'overview', 'No description available')
+                'description': getattr(movie, 'overview', 'No description available'),
+                'image_url': f"https://image.tmdb.org/t/p/w500{movie.poster_path}" if hasattr(movie, 'poster_path') and movie.poster_path else None
             }
         except Exception as e:
             print(f"Error getting basic movie details: {e}")
@@ -163,6 +191,7 @@ class MovieDetailsTool(BaseTool):
     description: str = "Get detailed information about a specific movie"
     args_schema: type[BaseModel] = MovieDetailsInput
     
+    @cache_api_call(ttl=3600)
     def _run(self, movie_id: int) -> str:
         try:
             api_key = os.getenv('TMDB_API_KEY')
@@ -179,8 +208,11 @@ class MovieDetailsTool(BaseTool):
                 'append_to_response': 'credits'
             }
             
-            print(f"🔍 Getting details for movie ID: {movie_id}")
-            response = requests.get(movie_url, params=params, timeout=10)
+            logger.debug(f"MovieDetailsTool._run: getting details for movie_id={movie_id}")
+            start = time()
+            response = _session.get(movie_url, params=params, timeout=10)
+            duration = time() - start
+            logger.debug(f"MovieDetailsTool._run: TMDB responded status={getattr(response,'status_code',None)} in {duration:.3f}s")
             
             if response.status_code != 200:
                 return f"Error fetching movie details: {response.status_code}"
@@ -223,6 +255,7 @@ class PopularMoviesTool(BaseTool):
     name: str = "get_popular_movies"
     description: str = "Get currently popular movies using direct API calls"
     
+    @cache_api_call(ttl=3600)
     def _run(self, genre: Optional[str] = None) -> str:
         try:
             api_key = os.getenv('TMDB_API_KEY')
@@ -239,8 +272,11 @@ class PopularMoviesTool(BaseTool):
                 'page': 1
             }
             
-            print("🔍 Getting popular movies via direct API...")
-            response = requests.get(popular_url, params=params, timeout=10)
+            logger.debug("PopularMoviesTool._run: getting popular movies via direct API")
+            start = time()
+            response = _session.get(popular_url, params=params, timeout=10)
+            duration = time() - start
+            logger.debug(f"PopularMoviesTool._run: TMDB responded status={getattr(response,'status_code',None)} in {duration:.3f}s")
             
             if response.status_code != 200:
                 return "Error fetching popular movies. Using fallback data."
@@ -268,7 +304,8 @@ class PopularMoviesTool(BaseTool):
                     f"Title: {movie['title']} ({movie['year']})\n"
                     f"Rating: {movie['rating']}/10\n"
                     f"Genre: {movie['genre']}\n"
-                    f"Description: {movie['description']}"
+                    f"Description: {movie['description']}\n"
+                    f"Image: {movie['image_url']}"
                 )
             
             return "Popular Movies:\n" + "\n---\n".join(formatted_results)
@@ -300,7 +337,8 @@ class PopularMoviesTool(BaseTool):
                 'year': release_year,
                 'rating': round(movie_data.get('vote_average', 0), 1),
                 'genre': ', '.join(genre_names) if genre_names else 'Unknown',
-                'description': movie_data.get('overview', 'No description available')
+                'description': movie_data.get('overview', 'No description available'),
+                'image_url': f"https://image.tmdb.org/t/p/w500{movie_data.get('poster_path')}" if movie_data.get('poster_path') else None
             }
         except Exception as e:
             print(f"Error parsing movie data: {e}")
@@ -313,6 +351,7 @@ class BookSearchTool(BaseTool):
     description: str = "Search for books using Google Books API"
     args_schema: type[BaseModel] = BookSearchInput
     
+    @cache_api_call(ttl=600)
     def _run(self, query: str, genre: Optional[str] = None) -> str:
         try:
             api_key = os.getenv('GOOGLE_BOOKS_API_KEY')
@@ -327,8 +366,11 @@ class BookSearchTool(BaseTool):
                 'key': api_key
             }
             
-            print(f"🔍 Searching books with query: {query}")
-            response = requests.get('https://www.googleapis.com/books/v1/volumes', params=params, timeout=10)
+            logger.debug(f"BookSearchTool._run: searching books q={query}")
+            start = time()
+            response = _session.get('https://www.googleapis.com/books/v1/volumes', params=params, timeout=10)
+            duration = time() - start
+            logger.debug(f"BookSearchTool._run: Google Books responded status={getattr(response,'status_code',None)} in {duration:.3f}s")
             response.raise_for_status()
             data = response.json()
             
@@ -371,6 +413,7 @@ class BookSearchTool(BaseTool):
                 'genre': ', '.join(volume_info.get('categories', ['General'])),
                 'description': volume_info.get('description', 'No description available.')[:300],
                 'rating': volume_info.get('averageRating', 'N/A'),
+                'image_url': volume_info.get('imageLinks', {}).get('thumbnail'),
             }
         except Exception as e:
             print(f"Error parsing book data: {e}")
@@ -382,13 +425,18 @@ class BookDetailsTool(BaseTool):
     description: str = "Get detailed information about a specific book"
     args_schema: type[BaseModel] = BookDetailsInput
     
+    @cache_api_call(ttl=3600)
     def _run(self, book_id: str) -> str:
         try:
             api_key = os.getenv('GOOGLE_BOOKS_API_KEY')
             if not api_key:
                 return "Google Books API key not configured. Please set GOOGLE_BOOKS_API_KEY in your environment variables."
                 
-            response = requests.get(f'https://www.googleapis.com/books/v1/volumes/{book_id}', timeout=10)
+            logger.debug(f"BookDetailsTool._run: fetching book_id={book_id}")
+            start = time()
+            response = _session.get(f'https://www.googleapis.com/books/v1/volumes/{book_id}', timeout=10)
+            duration = time() - start
+            logger.debug(f"BookDetailsTool._run: Google Books responded status={getattr(response,'status_code',None)} in {duration:.3f}s")
             response.raise_for_status()
             data = response.json()
             book_info = self._parse_book_data(data)
@@ -424,6 +472,7 @@ class BookDetailsTool(BaseTool):
                 'rating': volume_info.get('averageRating', 'N/A'),
                 'page_count': volume_info.get('pageCount'),
                 'publisher': volume_info.get('publisher', 'Unknown'),
+                'image_url': volume_info.get('imageLinks', {}).get('thumbnail'),
             }
         except Exception as e:
             print(f"Error parsing book data: {e}")
