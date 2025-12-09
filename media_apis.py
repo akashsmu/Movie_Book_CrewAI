@@ -12,6 +12,7 @@ from serpapi import GoogleSearch
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 import urllib.parse
+import random # Added this import as it's used by DiscoverMoviesTool
 
 # Define input schemas
 class MovieSearchInput(BaseModel):
@@ -155,7 +156,8 @@ class MovieSearchTool(BaseTool):
                     f"Genre: {movie['genre']}\n"
                     f"Description: {movie['description']}\n"
                     f"ID: {movie['id']}\n"
-                    f"Image: {movie['image_url']}"
+                    f"Image: {movie['image_url']}\n"
+                    f"Trailer: {movie.get('trailer_url', 'N/A')}"
                 )
             
             return "\n---\n".join(formatted_results)
@@ -205,10 +207,35 @@ class MovieSearchTool(BaseTool):
                 'rating': round(vote_average, 1) if vote_average is not None else 'N/A',
                 'genre': ', '.join(genre_names) if genre_names else 'Unknown',
                 'description': get_val(movie, 'overview', 'No description available'),
-                'image_url': f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+                'image_url': f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None,
+                'trailer_url': self._get_trailer_url(get_val(movie, 'id'))
             }
         except Exception as e:
             print(f"Error getting basic movie details: {e}")
+            return None
+
+    @cache_api_call(ttl=3600)
+    def _get_trailer_url(self, movie_id: int) -> Optional[str]:
+        """Fetch YouTube trailer URL for a movie"""
+        try:
+            if not movie_id or movie_id == 'N/A':
+                return None
+                
+            api_key = os.getenv('TMDB_API_KEY')
+            if not api_key:
+                return None
+                
+            url = f"https://api.themoviedb.org/3/movie/{movie_id}/videos"
+            params = {'api_key': api_key, 'language': 'en-US'}
+            
+            response = _session.get(url, params=params, timeout=5)
+            if response.status_code == 200:
+                results = response.json().get('results', [])
+                for video in results:
+                    if video.get('site') == 'YouTube' and video.get('type') == 'Trailer':
+                        return f"https://www.youtube.com/watch?v={video.get('key')}"
+            return None
+        except Exception:
             return None
 
 # Movie Details Tool
@@ -231,7 +258,7 @@ class MovieDetailsTool(BaseTool):
             params = {
                 'api_key': api_key,
                 'language': 'en-US',
-                'append_to_response': 'credits'
+                'append_to_response': 'credits,videos'
             }
             
             logger.debug(f"MovieDetailsTool._run: getting details for movie_id={movie_id}")
@@ -267,6 +294,14 @@ class MovieDetailsTool(BaseTool):
             
             poster_path = movie_data.get('poster_path')
             image_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+            
+            # Fetch trailer
+            trailer_url = None
+            videos = movie_data.get('videos', {}).get('results', [])
+            for video in videos:
+                if video.get('site') == 'YouTube' and video.get('type') == 'Trailer':
+                    trailer_url = f"https://www.youtube.com/watch?v={video.get('key')}"
+                    break
 
             return (
                 f"Title: {title} ({release_year})\n"
@@ -275,7 +310,8 @@ class MovieDetailsTool(BaseTool):
                 f"Duration: {duration}\n"
                 f"Description: {description}\n"
                 f"Cast: {cast_str if cast_str else 'N/A'}\n"
-                f"Image: {image_url}"
+                f"Image: {image_url}\n"
+                f"Trailer: {trailer_url if trailer_url else 'N/A'}"
             )
             
         except Exception as e:
@@ -336,7 +372,9 @@ class PopularMoviesTool(BaseTool):
                     f"Rating: {movie['rating']}/10\n"
                     f"Genre: {movie['genre']}\n"
                     f"Description: {movie['description']}\n"
-                    f"Image: {movie['image_url']}"
+                    f"Description: {movie['description']}\n"
+                    f"Image: {movie['image_url']}\n"
+                    f"Trailer: {movie.get('trailer_url', 'N/A')}"
                 )
             
             return "Popular Movies:\n" + "\n---\n".join(formatted_results)
@@ -370,12 +408,137 @@ class PopularMoviesTool(BaseTool):
                 'rating': round(vote_average, 1) if vote_average is not None else 'N/A',
                 'genre': ', '.join(genre_names) if genre_names else 'Unknown',
                 'description': movie_data.get('overview', 'No description available'),
-                'image_url': f"https://image.tmdb.org/t/p/w500{movie_data.get('poster_path')}" if movie_data.get('poster_path') else None
+                'description': movie_data.get('overview', 'No description available'),
+                'image_url': f"https://image.tmdb.org/t/p/w500{movie_data.get('poster_path')}" if movie_data.get('poster_path') else None,
+                'trailer_url': self._get_trailer_url(movie_data.get('id', 'N/A'))
             }
         except Exception as e:
             print(f"Error parsing movie data: {e}")
             return None
+            
+    def _get_trailer_url(self, movie_id: int) -> Optional[str]:
+        """Fetch YouTube trailer URL for a movie (Internal helper for popular movies)"""
+        # Re-use the logic or just call a shared helper if possible, 
+        # but since tools are separate classes, I'll duplicate the simple logic or instantiate MovieSearchTool.
+        # Duplicating specifically for this tool to keep it self-contained for now.
+        try:
+            if not movie_id or movie_id == 'N/A':
+                return None
+                
+            api_key = os.getenv('TMDB_API_KEY')
+            if not api_key:
+                return None
+            
+            # Using the module-level session
+            url = f"https://api.themoviedb.org/3/movie/{movie_id}/videos"
+            params = {'api_key': api_key, 'language': 'en-US'}
+            
+            response = _session.get(url, params=params, timeout=5)
+            if response.status_code == 200:
+                results = response.json().get('results', [])
+                for video in results:
+                    if video.get('site') == 'YouTube' and video.get('type') == 'Trailer':
+                        return f"https://www.youtube.com/watch?v={video.get('key')}"
+            return None
+        except Exception:
+            return None
         
+
+class DiscoverMoviesInput(BaseModel):
+    genre: str = Field(description="The genre to filter by (e.g., 'Action', 'Science Fiction')")
+    sort_by: Optional[str] = Field(default="popularity.desc", description="Sort order (default: popularity.desc)")
+
+class DiscoverMoviesTool(BaseTool):
+    name: str = "discover_movies"
+    description: str = "Find movies by genre with diverse results. Use this for broad genre requests like 'sci-fi movies' to get fresh recommendations."
+    args_schema: type[BaseModel] = DiscoverMoviesInput
+
+    def _run(self, genre: str, sort_by: str = "popularity.desc") -> str:
+        try:
+            api_key = os.getenv('TMDB_API_KEY')
+            if not api_key:
+                return "Error: TMDB_API_KEY not found."
+
+            # Map genre names to IDs
+            genre_map = {
+                "action": 28, "adventure": 12, "animation": 16, "comedy": 35,
+                "crime": 80, "documentary": 99, "drama": 18, "family": 10751,
+                "fantasy": 14, "history": 36, "horror": 27, "music": 10402,
+                "mystery": 9648, "romance": 10749, "science fiction": 878, "sci-fi": 878,
+                "tv movie": 10770, "thriller": 53, "war": 10752, "western": 37
+            }
+            
+            genre_id = genre_map.get(genre.lower())
+            if not genre_id:
+                # Try partial match
+                for k, v in genre_map.items():
+                    if k in genre.lower():
+                        genre_id = v
+                        break
+            
+            page = random.randint(1, 5) # Randomize page for diversity
+            
+            url = "https://api.themoviedb.org/3/discover/movie"
+            params = {
+                'api_key': api_key,
+                'with_genres': genre_id,
+                'sort_by': sort_by,
+                'language': 'en-US',
+                'page': page,
+                'vote_count.gte': 100 # Ensure decent quality
+            }
+            
+            logger.debug(f"DiscoverMoviesTool: discovering genre={genre} (id={genre_id}) page={page}")
+            response = _session.get(url, params=params, timeout=5)
+            
+            if response.status_code != 200:
+                return f"Error discovering movies: {response.status_code} - {response.text}"
+                
+            data = response.json()
+            results = data.get('results', [])[:5] # Top 5 from that page
+            
+            if not results:
+                return f"No movies found for genre: {genre}"
+
+            formatted_results = []
+            for movie in results:
+                movie_id = movie.get('id')
+                
+                # Fetch trailer (quick separate call per movie - acceptable for 5 items)
+                trailer_url = self._get_trailer_url(movie_id)
+                
+                poster_path = movie.get('poster_path')
+                image_url = f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else None
+                
+                formatted_results.append(
+                    f"Title: {movie.get('title')}\n"
+                    f"Year: {str(movie.get('release_date', 'N/A'))[:4]}\n"
+                    f"Rating: {movie.get('vote_average', 'N/A')}/10\n"
+                    f"Description: {movie.get('overview', 'No description available')}\n"
+                    f"Image: {image_url}\n"
+                    f"Trailer: {trailer_url if trailer_url else 'N/A'}"
+                )
+            
+            return "\n---\n".join(formatted_results)
+
+        except Exception as e:
+            return f"Error executing discover_movies: {str(e)}"
+
+    @cache_api_call(ttl=3600)
+    def _get_trailer_url(self, movie_id: int) -> Optional[str]:
+        try:
+            if not movie_id: return None
+            api_key = os.getenv('TMDB_API_KEY')
+            url = f"https://api.themoviedb.org/3/movie/{movie_id}/videos"
+            params = {'api_key': api_key}
+            resp = _session.get(url, params=params, timeout=3)
+            if resp.status_code == 200:
+                for video in resp.json().get('results', []):
+                    if video.get('site') == 'YouTube' and video.get('type') == 'Trailer':
+                        return f"https://www.youtube.com/watch?v={video.get('key')}"
+            return None
+        except:
+            return None
 
 # Book Search Tool
 class BookSearchTool(BaseTool):
@@ -656,6 +819,6 @@ news_search_tool = NewsSearchTool()
 trending_media_tool = TrendingMediaTool()
 
 # Export tools
-movie_tools = [movie_search_tool, movie_details_tool, popular_movies_tool]
-book_tools = [book_search_tool, book_details_tool]
-search_tools = [similar_titles_tool, news_search_tool, trending_media_tool]
+movie_tools = [MovieSearchTool(), MovieDetailsTool(), PopularMoviesTool(), DiscoverMoviesTool()]
+book_tools = [BookSearchTool(), BookDetailsTool()]
+search_tools = [SimilarTitlesTool(), news_search_tool, trending_media_tool]

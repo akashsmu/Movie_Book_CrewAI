@@ -162,6 +162,11 @@ class MediaRecommendationCrew:
                 2. Extract specific genres, themes, and moods
                 3. Identify timeframe preferences
                 4. Note any special requirements or constraints
+                4. Note any special requirements
+                
+                OPTIMIZATION:
+                - If the request is simple (e.g. 'action movies', 'best sci-fi books'), skip detailed analysis and return a standard profile immediately.
+                - Do not over-analyze simple queries.
                 
                 OUTPUT FORMAT:
                 - Media Type: [movie/book/both]
@@ -170,10 +175,8 @@ class MediaRecommendationCrew:
                 - Timeframe: [specific preference]
                 - Special Requirements: [any specific asks]""",
                 agent=self.analysis_agent,
-                expected_output="""Clear determination of media type and user preferences in structured format.
-                Must include: Media Type, Key Genres, Mood/Tone, Timeframe, Special Requirements.""",
-                max_iter=2,
-
+                expected_output="Detailed breakdown of user preferences including media type, genres, moods, and constraints.",
+                max_iter=3,
             )
             
             # Movie recommendation task
@@ -201,12 +204,20 @@ class MediaRecommendationCrew:
                 - Brief description
                 - Why it matches user preferences
                 - 2-3 similar movies
-                - Image/Poster URL (from search results)""",
+                - Image/Poster URL (from search results)
+                - Trailer URL (from search results)
+                
+                SMART STOPPING RULES:
+                1. If the user asks for a specific genre (e.g. 'sci-fi', 'action'), use 'discover_movies' tool first. It gives diverse, high-quality results.
+                2. If your FIRST search returns 3+ high-quality movies with images and trailers, STOP and return them immediately.
+                3. Do NOT run the exact same search query twice.
+                4. Only use 'get_movie_details' if you critically need cast/runtime info not in the search results.
+                """,
                 agent=self.movie_agent,
                 expected_output="""List of {num_recommendations} movie recommendations with complete details.
-                Each must include: title, year, genre, rating, description, why_recommended, similar_titles.""",
+                Each must include: title, year, genre, rating, description, why_recommended, similar_titles, image_url, trailer_url.""",
                 async_execution=True,
-                max_iter=3,
+                max_iter=5,
             )
             
             # Book recommendation task
@@ -235,12 +246,18 @@ class MediaRecommendationCrew:
                 - Brief description
                 - Why it matches user preferences
                 - 2-3 similar books
-                - Image/Cover URL (from search results)""",
+                - Image/Cover URL (from search results)
+                
+                SMART STOPPING RULES:
+                1. If your FIRST search returns 3+ high-quality books with images, STOP and return them immediately.
+                2. Do NOT run the exact same search query twice.
+                3. Do NOT loop unnecessarily. Speed is quality.
+                """,
                 agent=self.book_agent,
                 expected_output="""List of {num_recommendations} book recommendations with complete details.
-                Each must include: title, author, year, genre, rating, description, why_recommended, similar_titles.""",
+                Each must include: title, author, published_year, genre, rating, description, why_recommended, similar_titles, image_url.""",
                 async_execution=True,
-                max_iter=3,
+                max_iter=5,
             )
             
             # Research task
@@ -298,7 +315,8 @@ class MediaRecommendationCrew:
                     "description": "Brief description",
                     "why_recommended": "Personalized explanation",
                     "similar_titles": ["Title1", "Title2", "Title3"],
-                    "image_url": "https://..."
+                    "image_url": "https://...",
+                    "trailer_url": "https://www.youtube.com/..."
                   }}
                 ]""",
                 agent=self.editor_agent,
@@ -355,8 +373,17 @@ class MediaRecommendationCrew:
             # Update tasks with current inputs
             self._update_task_descriptions(task_inputs)
             
-            # Create crew with production settings
-            crew = self._create_crew()
+            # FAST PATH CHECK
+            fast_path_match = self._check_fast_path(user_request)
+            if fast_path_match:
+                logger.info(f"Fast Path triggered: {fast_path_match}")
+                # Bypass Analysis Agent
+                # We need to manually inject the "analysis" result or just configure the crew to skip the analysis task
+                # Simplest way: Create a custom crew list excluding analysis_task
+                crew = self._create_fast_path_crew(fast_path_match)
+            else:
+                # Normal flow
+                crew = self._create_crew()
             
             # Execute with timeout protection
             result = self._execute_crew_with_timeout(crew, task_inputs, timeout=600)  # 10 minute timeout
@@ -432,6 +459,46 @@ class MediaRecommendationCrew:
         except Exception as e:
             logger.warning(f"Error in task callback: {e}")
     
+    def _check_fast_path(self, user_request: str) -> Optional[Dict]:
+        """Check if request allows for fast path execution"""
+        # Simple regex for "genre media_type" patterns
+        # e.g. "sci fi movies", "action books", "comedy movie"
+        
+        request = user_request.lower().strip()
+        
+        # Movie patterns
+        movie_match = re.search(r'^(action|adventure|animation|comedy|crime|documentary|drama|family|fantasy|history|horror|music|mystery|romance|sci-fi|sci fi|science fiction|thriller|war|western)\s+movies?$', request)
+        if movie_match:
+            # Normalize genre for API
+            genre = movie_match.group(1)
+            if genre == 'sci fi': genre = 'sci-fi'
+            return {"type": "movie", "genre": genre}
+            
+        return None
+
+    def _create_fast_path_crew(self, context: Dict) -> Crew:
+        """Create a simplified crew for fast execution"""
+        tasks = []
+        
+        # Add specific task based on detected type
+        if context['type'] == 'movie':
+            # Pre-inject genre into task description if possible, or reliance on agent to pick it up from user_request (which is preserved)
+            # Actually, _update_task_descriptions already updated description with {user_request}
+            tasks.append(self.movie_task)
+            
+        tasks.append(self.editor_task)
+        
+        return Crew(
+            agents=[self.movie_agent, self.editor_agent], # Only relevant agents
+            tasks=tasks,
+            process=Process.sequential,
+            verbose=True,
+            memory=False,
+            max_rpm=20,
+            step_callback=self._log_step,
+            task_callback=self._log_task
+        )
+
     def _create_crew(self) -> Crew:
         """Create crew with production configuration"""
         tasks = [self.analysis_task]
@@ -654,7 +721,8 @@ class MediaRecommendationCrew:
             'description': ['description:', 'summary:', 'plot:'],
             'why_recommended': ['why:', 'recommended because:', 'matches because:'],
             'type': ['type:'],
-            'image_url': ['image:', 'cover:', 'poster:']
+            'image_url': ['image:', 'cover:', 'poster:'],
+            'trailer_url': ['trailer:', 'video:', 'preview:']
         }
         
         for field, patterns in field_patterns.items():
@@ -679,6 +747,7 @@ class MediaRecommendationCrew:
             rec.setdefault('description', 'No description available')
             rec.setdefault('why_recommended', 'Matches your preferences')
             rec.setdefault('image_url', None)
+            rec.setdefault('trailer_url', None)
             
             # Clean up fields
             if 'year' in rec:

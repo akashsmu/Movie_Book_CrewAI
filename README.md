@@ -17,8 +17,8 @@ A sophisticated multi-agent AI system that provides personalized movie and book 
 - **Editor Agent**: Refines and personalizes final recommendations
 
 ### 🔌 Real-Time API Integration
-- **TMDB API**: Current movie data, ratings, and details
-- **Google Books API**: Comprehensive book information and reviews
+- **TMDB API**: Current movie data, ratings, trailers, and posters
+- **Google Books API**: Comprehensive book information, covers, and reviews
 - **SerpAPI**: Web search for similar titles and trending content
 - **Real-time Data**: Always up-to-date recommendations
 
@@ -30,9 +30,15 @@ A sophisticated multi-agent AI system that provides personalized movie and book 
 
 ### 💻 User-Friendly Interface
 - **Streamlit Web App**: Beautiful, responsive interface
+- **Visual Richness**: Displays movie posters, book covers, and plays trailers directly in-app
 - **Interactive Controls**: Easy preference customization
-- **Real-time Results**: Instant recommendation generation
+- **Real-time Results**: Instant recommendation generation (Optimized for speed)
 - **Feedback System**: Like/dislike to improve future suggestions
+
+### ⚡ Performance & Diversity
+- **Fast Path**: Simple queries (e.g., "action movies") bypass deep analysis for sub-30s results.
+- **Smart Stopping**: Agents recognize when they have enough good data and stop searching early.
+- **Discovery Mode**: Randomized exploration ensures you get fresh, diverse recommendations for broad genres, not just the same top 3 hits.
 
 ## 🚀 Quick Start
 
@@ -391,6 +397,7 @@ python -m pytest tests/
 
 ## 🔄 Version History
 
+- **v1.1.0** (Update): Added Movie Trailers, Visual Enhancements, Fast Path Performance, and Diversity/Discovery Mode.
 - **v1.0.0** (Current): Initial release with multi-agent recommendation system
 - **v0.1.0**: Beta release with basic functionality
 
