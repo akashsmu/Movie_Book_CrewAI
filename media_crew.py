@@ -2,6 +2,7 @@ from crewai import Agent, Task, Crew, Process
 from langchain_openai import ChatOpenAI
 import os
 from typing import Dict, List, Optional, Any
+import concurrent.futures
 import requests
 import json
 import re
@@ -9,6 +10,8 @@ import time
 import logging
 from datetime import datetime
 from media_apis import movie_tools, book_tools, search_tools
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # Configure logging
 logging.basicConfig(
@@ -24,6 +27,19 @@ logger = logging.getLogger(__name__)
 class MediaRecommendationCrew:
     def __init__(self):
         self.llm = self._setup_llm()
+        # Shared HTTP session for external API calls (connection pooling + retries)
+        try:
+            self._http = requests.Session()
+            _retry = Retry(total=3, backoff_factor=0.3, status_forcelist=[500,502,503,504])
+            _adapter = HTTPAdapter(max_retries=_retry, pool_connections=10, pool_maxsize=10)
+            self._http.mount('https://', _adapter)
+            self._http.mount('http://', _adapter)
+        except Exception:
+            self._http = requests.Session()
+
+        # Simple in-memory rating cache (title -> (timestamp, rating))
+        self._rating_cache: Dict[str, Any] = {}
+        self.RATING_CACHE_TTL = int(os.getenv('RATING_CACHE_TTL', '86400'))  # seconds, default 24h
         self.setup_agents()
         self.setup_tasks()
         logger.info("MediaRecommendationCrew initialized successfully")
@@ -63,8 +79,8 @@ class MediaRecommendationCrew:
                 verbose=False,
                 allow_delegation=False,
                 llm=self.llm,
-                max_iter=2,  # Prevent infinite loops
-                max_rpm=30   # Rate limiting
+                max_iter=5,  # Increased from 1
+                max_rpm=20    # Increased from 5
             )
             
             # Movie Specialist Agent
@@ -78,8 +94,8 @@ class MediaRecommendationCrew:
                 allow_delegation=False,
                 llm=self.llm,
                 tools=movie_tools + [search_tools[0]],  # movie tools + similar_titles_tool
-                max_iter=3,
-                max_rpm=30
+                max_iter=10,
+                max_rpm=20
             )
             
             # Book Specialist Agent
@@ -93,8 +109,8 @@ class MediaRecommendationCrew:
                 allow_delegation=False,
                 llm=self.llm,
                 tools=book_tools + [search_tools[0]],  # book tools + similar_titles_tool
-                max_iter=3,
-                max_rpm=30
+                max_iter=10,
+                max_rpm=20
             )
             
             # Research Agent
@@ -107,8 +123,8 @@ class MediaRecommendationCrew:
                 allow_delegation=False,
                 llm=self.llm,
                 tools=search_tools,
-                max_iter=2,
-                max_rpm=30
+                max_iter=10,
+                max_rpm=20
             )
             
             # Editor Agent
@@ -121,8 +137,8 @@ class MediaRecommendationCrew:
                 verbose=False,
                 allow_delegation=False,
                 llm=self.llm,
-                max_iter=3,
-                max_rpm=30
+                max_iter=5,
+                max_rpm=20
             )
             
             logger.info("All agents initialized successfully")
@@ -279,12 +295,13 @@ class MediaRecommendationCrew:
                     "rating": 8.5,
                     "description": "Brief description",
                     "why_recommended": "Personalized explanation",
-                    "similar_titles": ["Title1", "Title2", "Title3"]
+                    "similar_titles": ["Title1", "Title2", "Title3"],
+                    "image_url": "https://..."
                   }}
                 ]""",
                 agent=self.editor_agent,
                 expected_output="""Valid JSON array with 3-5 personalized media recommendations.
-                Each item must have: title, type, year, genre, rating, description, why_recommended, similar_titles.
+                Each item must have: title, type, year, genre, rating, description, why_recommended, similar_titles, image_url.
                 NO additional text outside JSON.""",
                 max_iter=3,
             )
@@ -340,7 +357,7 @@ class MediaRecommendationCrew:
             crew = self._create_crew()
             
             # Execute with timeout protection
-            result = self._execute_crew_with_timeout(crew, task_inputs, timeout=120)  # 5 minute timeout
+            result = self._execute_crew_with_timeout(crew, task_inputs, timeout=600)  # 10 minute timeout
             
             # Parse and validate results
             recommendations = self._process_crew_result(result, user_request, media_type)
@@ -401,45 +418,58 @@ class MediaRecommendationCrew:
         
         #tasks.append(self.research_task)
         tasks.append(self.editor_task)
-        
+
         return Crew(
-            agents=[self.analysis_agent, self.movie_agent, self.book_agent, 
-                   self.research_agent, self.editor_agent],
+            agents=[self.analysis_agent, self.movie_agent, self.book_agent,
+                    self.research_agent, self.editor_agent],
             tasks=tasks,
             process=Process.sequential,
             verbose=False,  # Set to False in production
             memory=False,
-            max_rpm=100,
-            #full_output=False,
-            #step_callback=lambda step: logger.info(f"Step completed: {step}"),
-            #task_callback=lambda task: logger.info(f"Task started: {task.agent.role}")
+            max_rpm=20,
+            step_callback=None,
+            task_callback=None
         )
     
-    def _execute_crew_with_timeout(self, crew: Crew, inputs: Dict[str, Any], timeout: int = 300):
-        """Execute crew with timeout protection"""
-        import time
-        
+    def _execute_crew_with_timeout(self, crew: Crew, inputs: Dict[str, Any], timeout: int = 120):
+        """Execute crew with timeout protection.
+
+        Runs crew.kickoff in a background thread and enforces a hard timeout on waiting.
+        If the timeout is reached, we return None (caller should handle fallback).
+        Note: underlying background thread may still be running; this prevents the API
+        from blocking the caller and limits user-facing latency.
+        """
         start_time = time.time()
-        
+
+        logger.info("Starting crew kickoff (with timeout protection)...")
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(self._run_crew_kickoff, crew, inputs)
+            try:
+                result = future.result(timeout=timeout)
+                execution_time = time.time() - start_time
+                logger.info(f"Crew kickoff completed in {execution_time:.2f}s")
+                return result
+            except concurrent.futures.TimeoutError:
+                logger.error(f"Crew kickoff exceeded timeout of {timeout}s; returning early and using fallback")
+                # Attempt to cancel the future; if it is already running, cancel() returns False
+                try:
+                    future.cancel()
+                except Exception:
+                    pass
+                return None
+            except Exception as e:
+                execution_time = time.time() - start_time
+                logger.error(f"Crew kickoff failed after {execution_time:.2f}s: {e}")
+                return None
+
+    def _run_crew_kickoff(self, crew: Crew, inputs: Dict[str, Any]):
+        """Small wrapper to call crew.kickoff() so it can be run in a thread."""
         try:
-            logger.info("Starting crew kickoff...")
-            result = crew.kickoff()
-            
-            execution_time = time.time() - start_time
-            if execution_time > timeout:
-                logger.warning(f"Crew execution timed out after {execution_time:.2f} seconds")
-            return result
-        
-        except TimeoutError:
-            logger.error("Crew execution timed out")
-            raise
+            return crew.kickoff()
         except Exception as e:
-            execution_time = time.time() - start_time  # Ensure timeout is cleared
-            if execution_time > timeout:
-                logger.warning(f"Crew execution timed out after {execution_time:.2f} seconds")
-                raise TimeoutError(f"Crew execution timed out after {execution_time:.2f} seconds") from e
-            else:
-                raise
+            logger.error(f"Error during crew.kickoff(): {e}")
+            raise
     
     def _process_crew_result(self, result: Any, user_request: str, media_type: str) -> List[Dict]:
         """Process and validate crew result"""
@@ -556,7 +586,7 @@ class MediaRecommendationCrew:
                     continue
                 
                 # New recommendation detection
-                if self._is_new_recommendation(line):
+                if self._is_new_recommendation(line, len(recommendations)):
                     if current_rec and self._is_valid_recommendation(current_rec):
                         recommendations.append(current_rec)
                         current_rec = {}
@@ -575,11 +605,11 @@ class MediaRecommendationCrew:
             logger.error(f"Error in structured text parsing: {e}")
             return None
     
-    def _is_new_recommendation(self, line: str) -> bool:
+    def _is_new_recommendation(self, line: str, current_count: int = 0) -> bool:
         """Check if line indicates a new recommendation"""
         new_rec_indicators = [
             'title:', 'movie:', 'book:', 'recommendation', '###', '---',
-            str(len(self.recommendations) + 1) + '.',  # "1.", "2.", etc.
+            str(current_count + 1) + '.',  # "1.", "2.", etc.
         ]
         return any(indicator in line.lower() for indicator in new_rec_indicators)
     
@@ -592,7 +622,8 @@ class MediaRecommendationCrew:
             'rating': ['rating:', 'score:'],
             'description': ['description:', 'summary:', 'plot:'],
             'why_recommended': ['why:', 'recommended because:', 'matches because:'],
-            'type': ['type:']
+            'type': ['type:'],
+            'image_url': ['image:', 'cover:', 'poster:']
         }
         
         for field, patterns in field_patterns.items():
@@ -612,8 +643,11 @@ class MediaRecommendationCrew:
             # Ensure required fields
             rec.setdefault('rating', 'N/A')
             rec.setdefault('similar_titles', [])
+            rec.setdefault('rating', 'N/A')
+            rec.setdefault('similar_titles', [])
             rec.setdefault('description', 'No description available')
             rec.setdefault('why_recommended', 'Matches your preferences')
+            rec.setdefault('image_url', None)
             
             # Clean up fields
             if 'year' in rec:
@@ -693,7 +727,14 @@ class MediaRecommendationCrew:
         api_key = os.getenv('TMDB_API_KEY')
         if not api_key:
             return None
-        
+        # Check cache first
+        key = f"movie:{title.lower()}"
+        now = time.time()
+        cached = self._rating_cache.get(key)
+        if cached and now - cached[0] < self.RATING_CACHE_TTL:
+            logger.debug(f"_fetch_movie_rating: cache HIT for {key}")
+            return cached[1]
+
         try:
             params = {
                 'api_key': api_key,
@@ -701,53 +742,65 @@ class MediaRecommendationCrew:
                 'language': 'en-US',
                 'page': 1
             }
-            
-            response = requests.get(
-                'https://api.themoviedb.org/3/search/movie',
-                params=params,
-                timeout=10
-            )
+
+            start = time.time()
+            response = self._http.get('https://api.themoviedb.org/3/search/movie', params=params, timeout=10)
+            duration = time.time() - start
+            logger.debug(f"_fetch_movie_rating: TMDB responded status={getattr(response,'status_code',None)} in {duration:.3f}s for title={title}")
             response.raise_for_status()
-            
+
             data = response.json()
             results = data.get('results', [])
-            
+
             if results and results[0].get('vote_average'):
-                return round(float(results[0]['vote_average']), 1)
-                
+                rating = round(float(results[0]['vote_average']), 1)
+                # Cache result
+                self._rating_cache[key] = (now, rating)
+                logger.debug(f"_fetch_movie_rating: cached rating {rating} for {key}")
+                return rating
+
         except Exception as e:
             logger.debug(f"TMDB API error for {title}: {e}")
-        
+
         return None
     
     def _fetch_book_rating(self, title: str) -> Optional[float]:
         """Fetch book rating from Google Books"""
         api_key = os.getenv('GOOGLE_BOOKS_API_KEY')
-        
+        # Check cache first
+        key = f"book:{title.lower()}"
+        now = time.time()
+        cached = self._rating_cache.get(key)
+        if cached and now - cached[0] < self.RATING_CACHE_TTL:
+            logger.debug(f"_fetch_book_rating: cache HIT for {key}")
+            return cached[1]
+
         try:
             params = {'q': title, 'maxResults': 1}
             if api_key:
                 params['key'] = api_key
-            
-            response = requests.get(
-                'https://www.googleapis.com/books/v1/volumes',
-                params=params,
-                timeout=10
-            )
+
+            start = time.time()
+            response = self._http.get('https://www.googleapis.com/books/v1/volumes', params=params, timeout=10)
+            duration = time.time() - start
+            logger.debug(f"_fetch_book_rating: Google Books responded status={getattr(response,'status_code',None)} in {duration:.3f}s for title={title}")
             response.raise_for_status()
-            
+
             data = response.json()
             items = data.get('items', [])
-            
+
             if items:
                 volume_info = items[0].get('volumeInfo', {})
                 avg_rating = volume_info.get('averageRating')
                 if avg_rating is not None:
-                    return float(avg_rating)
-                    
+                    rating = float(avg_rating)
+                    self._rating_cache[key] = (now, rating)
+                    logger.debug(f"_fetch_book_rating: cached rating {rating} for {key}")
+                    return rating
+
         except Exception as e:
             logger.debug(f"Google Books API error for {title}: {e}")
-        
+
         return None
     
     def _get_fallback_recommendations(self, user_request: str, media_type: str) -> List[Dict]:

@@ -191,9 +191,18 @@ class MediaRecommenderApp:
                 col1, col2 = st.columns([1, 3])
                 
                 with col1:
-                    # Placeholder for images (would be implemented with actual API)
-                    emoji = "🎬" if rec.get('type') == 'movie' else "📚"
-                    st.markdown(f"<h3>{emoji} #{i}</h3>", unsafe_allow_html=True)
+                    # Display proper image or fallback emoji
+                    if rec.get('image_url'):
+                        try:
+                            st.image(rec['image_url'], use_column_width=True)
+                        except Exception:
+                            # Fallback if image fails to load
+                            emoji = "🎬" if rec.get('type') == 'movie' else "📚"
+                            st.markdown(f"<h3>{emoji} #{i}</h3>", unsafe_allow_html=True)
+                    else:
+                        emoji = "🎬" if rec.get('type') == 'movie' else "📚"
+                        st.markdown(f"<h3>{emoji} #{i}</h3>", unsafe_allow_html=True)
+                    
                     # Render rating for movies (out of 10) and books (out of 5).
                     rating = rec.get('rating', None)
                     if rating is not None:
