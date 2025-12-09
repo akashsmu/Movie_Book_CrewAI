@@ -194,7 +194,7 @@ class MediaRecommenderApp:
                     # Display proper image or fallback emoji
                     if rec.get('image_url'):
                         try:
-                            st.image(rec['image_url'], use_container_width=True)
+                            st.image(rec['image_url'], use_container_width=True, width="stretch")
                         except Exception:
                             # Fallback if image fails to load
                             emoji = "🎬" if rec.get('type') == 'movie' else "📚"
@@ -244,6 +244,11 @@ class MediaRecommenderApp:
                         with st.expander("Similar titles you might like"):
                             for similar in rec['similar_titles'][:3]:
                                 st.write(f"• {similar}")
+                                
+                    # Watch Trailer
+                    if rec.get('trailer_url'):
+                        with st.expander("🎬 Watch Trailer"):
+                            st.video(rec['trailer_url'])
                     
                     # Action buttons
                     col_actions = st.columns(3)
