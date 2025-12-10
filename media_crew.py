@@ -326,6 +326,7 @@ class MediaRecommendationCrew:
                 Include 'preview_url' for books if available.
                 NO additional text outside JSON.""",
                 max_iter=3,
+                context=[self.movie_task, self.book_task, self.research_task],
             )
             
             logger.info("All tasks initialized successfully")

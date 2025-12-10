@@ -34,6 +34,7 @@ class PersonalizationManager:
             self.user_data[user_id] = {
                 'preferences': {},
                 'history': [],
+                'watchlist': [],
                 'liked_recommendations': [],
                 'disliked_recommendations': []
             }
@@ -65,7 +66,9 @@ class PersonalizationManager:
                 {
                     'title': rec.get('title'),
                     'type': rec.get('type'),
-                    'genre': rec.get('genre')
+                    'genre': rec.get('genre'),
+                    'why_recommended': rec.get('why_recommended'),
+                    'preview_url': rec.get('preview_url')
                 } for rec in recommendations
             ]
         }
@@ -77,6 +80,58 @@ class PersonalizationManager:
             self.user_data[user_id]['history'] = self.user_data[user_id]['history'][-50:]
         
         self._save_user_data()
+
+    def get_watchlist(self, user_id: str) -> List[Dict]:
+        """Get user's watchlist"""
+        if user_id not in self.user_data:
+            return []
+        return self.user_data[user_id].get('watchlist', [])
+
+    def add_to_watchlist(self, user_id: str, item: Dict):
+        """Add item to watchlist if not present"""
+        if user_id not in self.user_data:
+            self.save_user_preferences(user_id, "both", "Any", "Any", "Any") # Init user
+        
+        watchlist = self.user_data[user_id].setdefault('watchlist', [])
+        
+        # Check for duplicates by title and type
+        if not any(w['title'] == item['title'] and w['type'] == item['type'] for w in watchlist):
+            # Save a clean copy of the item
+            saved_item = {
+                'title': item.get('title'),
+                'type': item.get('type'),
+                'genre': item.get('genre'),
+                'description': item.get('description'),
+                'year': item.get('year'),
+                'rating': item.get('rating'),
+                'image_url': item.get('image_url'),
+                'trailer_url': item.get('trailer_url'),
+                'preview_url': item.get('preview_url'),
+                'saved_at': datetime.now().isoformat()
+            }
+            watchlist.append(saved_item)
+            self._save_user_data()
+            return True
+        return False
+
+    def remove_from_watchlist(self, user_id: str, item: Dict):
+        """Remove item from watchlist"""
+        if user_id not in self.user_data:
+            return False
+            
+        watchlist = self.user_data[user_id].get('watchlist', [])
+        initial_len = len(watchlist)
+        
+        # Filter out the item
+        self.user_data[user_id]['watchlist'] = [
+            w for w in watchlist 
+            if not (w['title'] == item['title'] and w['type'] == item['type'])
+        ]
+        
+        if len(self.user_data[user_id]['watchlist']) < initial_len:
+            self._save_user_data()
+            return True
+        return False
     
     def get_user_context(self, user_id: str) -> str:
         """Get personalized context for recommendation generation"""
