@@ -2,6 +2,7 @@ import streamlit as st
 import os
 from datetime import datetime
 import json
+import urllib.parse
 from typing import Dict, List, Optional
 from dotenv import load_dotenv
 from media_crew import MediaRecommendationCrew
@@ -59,7 +60,7 @@ class MediaRecommenderApp:
             
             # Watchlist Section
             st.markdown("---")
-            st.subheader("📑 Your Watchlist")
+            st.subheader("📑 Your Bucketlist")
             
             # Show toast if item was just added
             if 'watchlist_success' in st.session_state:
@@ -71,7 +72,7 @@ class MediaRecommenderApp:
                     emoji = "🎬" if item.get('type') == 'movie' else "📚"
                     st.markdown(f"{emoji} **{item['title']}**")
             else:
-                st.info("No items in watchlist yet. Save recommendations to see them here!")
+                st.info("No items in bucketlist yet. Save recommendations to see them here!")
             
             st.markdown("---")
             
@@ -121,18 +122,81 @@ class MediaRecommenderApp:
             
             return media_type, genre, mood, timeframe, use_personalization, user_id
     
+    def handle_recommendation_request(self, user_input, media_type, genre, mood, timeframe, num_recommendations, use_personalization, user_id):
+        """Handle the core logic of fetching and displaying recommendations"""
+        with st.spinner("🤔 Analyzing your request and searching for the best recommendations..."):
+            try:
+                # Get personalized context if enabled
+                personalization_context = ""
+                if use_personalization:
+                    personalization_context = self.personalization_manager.get_user_context(user_id)
+                
+                # Initialize crew and get recommendations
+                crew = MediaRecommendationCrew()
+                recommendations = crew.run(
+                    user_request=user_input,
+                    media_type=media_type.lower(),
+                    genre=genre if genre != "Any" else None,
+                    mood=mood if mood != "Any" else None,
+                    timeframe=timeframe if timeframe != "Any" else None,
+                    num_recommendations=num_recommendations,
+                    personalization_context=personalization_context
+                )
+                
+                # Store recommendations in session
+                st.session_state.recommendations = recommendations
+                st.session_state.user_input = user_input
+                
+                # Update user history
+                if use_personalization:
+                    self.personalization_manager.update_user_history(
+                        user_id, user_input, recommendations
+                    )
+                
+                return True
+                
+            except Exception as e:
+                st.error(f"Error getting recommendations: {str(e)}")
+                return False
+
     def render_main_interface(self):
         st.markdown('<div class="main-header">🎬📚 AI Media Recommender</div>', unsafe_allow_html=True)
         
         # Get sidebar inputs
         media_type, genre, mood, timeframe, use_personalization, user_id = self.render_sidebar()
         
+        # Handle Pivot Request (More Like This)
+        if 'pivot_request' in st.session_state:
+            pivot_query = st.session_state.pivot_request
+            del st.session_state.pivot_request # Clear immediately
+            
+            # Update session state for the text area to pick up
+            st.session_state.temp_input_value = pivot_query
+            
+            # Clean up old recommendations before generating new ones to avoid confusion
+            if 'recommendations' in st.session_state:
+                del st.session_state.recommendations
+            
+            # Auto-trigger search
+            self.handle_recommendation_request(
+                pivot_query, media_type, genre, mood, timeframe, 
+                st.session_state.get('last_num_recs', 3), # Use last count or default
+                use_personalization, user_id
+            )
+            st.rerun()
+
         # Main input area
         col1, col2 = st.columns([2, 1])
         
         with col1:
+            # Check for temp input value from pivot
+            default_input = st.session_state.get('temp_input_value', "")
+            if 'temp_input_value' in st.session_state:
+                del st.session_state.temp_input_value
+                
             user_input = st.text_area(
                 "What are you in the mood for?",
+                value=default_input,
                 placeholder="E.g., 'I want an exciting sci-fi movie with great visuals' or 'Recommend me a thought-provoking book about AI'",
                 height=100
             )
@@ -142,6 +206,9 @@ class MediaRecommenderApp:
                 col3, col4 = st.columns(2)
                 with col3:
                     num_recommendations = st.slider("Number of recommendations", 1, 10, 3)
+                    # Store for pivot usage
+                    st.session_state.last_num_recs = num_recommendations
+                    
                     diversity = st.slider("Diversity of recommendations", 1, 10, 7)
                 with col4:
                     include_reviews = st.checkbox("Include reviews", value=True)
@@ -164,37 +231,10 @@ class MediaRecommenderApp:
             if user_input or 'example_input' in st.session_state:
                 actual_input = user_input if user_input else st.session_state.get('example_input', '')
                 
-                with st.spinner("🤔 Analyzing your request and searching for the best recommendations..."):
-                    try:
-                        # Get personalized context if enabled
-                        personalization_context = ""
-                        if use_personalization:
-                            personalization_context = self.personalization_manager.get_user_context(user_id)
-                        
-                        # Initialize crew and get recommendations
-                        crew = MediaRecommendationCrew()
-                        recommendations = crew.run(
-                            user_request=actual_input,
-                            media_type=media_type.lower(),
-                            genre=genre if genre != "Any" else None,
-                            mood=mood if mood != "Any" else None,
-                            timeframe=timeframe if timeframe != "Any" else None,
-                            num_recommendations=num_recommendations,
-                            personalization_context=personalization_context
-                        )
-                        
-                        # Store recommendations in session
-                        st.session_state.recommendations = recommendations
-                        st.session_state.user_input = actual_input
-                        
-                        # Update user history
-                        if use_personalization:
-                            self.personalization_manager.update_user_history(
-                                user_id, actual_input, recommendations
-                            )
-                        
-                    except Exception as e:
-                        st.error(f"Error getting recommendations: {str(e)}")
+                self.handle_recommendation_request(
+                    actual_input, media_type, genre, mood, timeframe, 
+                    num_recommendations, use_personalization, user_id
+                )
             
             else:
                 st.warning("Please describe what you're looking for or select a quick example.")
@@ -202,6 +242,14 @@ class MediaRecommenderApp:
         # Display recommendations if available
         if 'recommendations' in st.session_state:
             self.display_recommendations(st.session_state.recommendations,user_id=user_id)
+            
+    def _get_external_link(self, title: str, media_type: str) -> str:
+        """Generate external search link based on media type"""
+        encoded_title = urllib.parse.quote(title)
+        if media_type == 'movie':
+            return f"https://www.justwatch.com/us/search?q={encoded_title}"
+        else: # book
+            return f"https://www.goodreads.com/search?q={encoded_title}"
     
     def display_recommendations(self, recommendations, user_id:str):
         st.markdown("---")
@@ -267,9 +315,25 @@ class MediaRecommenderApp:
                                 st.write(f"• {similar}")
                                 
                     # Watch Trailer
-                    if rec.get('trailer_url'):
-                        with st.expander("🎬 Watch Trailer"):
-                            st.video(rec['trailer_url'])
+                    # Watch Trailer (Movies) or Read Sample (Books)
+                    if rec.get('type') == 'movie':
+                        if rec.get('trailer_url'):
+                            with st.expander("🎬 Watch Trailer"):
+                                st.video(rec['trailer_url'])
+                        
+                        # External Link for Movie
+                        external_link = self._get_external_link(rec['title'], 'movie')
+                        st.link_button("📺 Watch on JustWatch", external_link)
+                        
+                    elif rec.get('type') == 'book':
+                        # Books: Side-by-side buttons
+                        col_links = st.columns(2)
+                        with col_links[0]:
+                            if rec.get('preview_url'):
+                                st.link_button("📖 Read Sample", rec['preview_url'], use_container_width=True)
+                        with col_links[1]:
+                            external_link = self._get_external_link(rec['title'], 'book')
+                            st.link_button("📖 Buy on Goodreads", external_link, use_container_width=True)
                     
                     # Action buttons
                     col_actions = st.columns(3)
@@ -288,13 +352,18 @@ class MediaRecommenderApp:
                         if is_in_watchlist:
                             if st.button("🗑️ Unsave", key=f"unsave_{i}"):
                                 st.session_state.watchlist.remove(rec)
-                                st.session_state.watchlist_success = f"Removed '{rec['title']}' from Watchlist."
+                                st.session_state.watchlist_success = f"Removed '{rec['title']}' from Bucketlist."
                                 st.rerun()
                         else:
                             if st.button("💾 Save", key=f"save_{i}"):
                                 st.session_state.watchlist.append(rec)
-                                st.session_state.watchlist_success = f"Added '{rec['title']}' to Watchlist!"
+                                st.session_state.watchlist_success = f"Added '{rec['title']}' to Bucketlist!"
                                 st.rerun()
+                    
+                    # More Like This Pivot (Styled creatively)
+                    if st.button("✨ More Like This", key=f"pivot_{i}", help="Find other recommendations like this one"):
+                        st.session_state.pivot_request = f"Find {rec.get('type', 'movie')}s similar to '{rec['title']}'"
+                        st.rerun()
                 
                 st.markdown("---")
     
