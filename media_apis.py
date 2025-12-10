@@ -588,7 +588,8 @@ class BookSearchTool(BaseTool):
                     f"Genre: {book['genre']}\n"
                     f"Rating: {book['rating']}/5\n"
                     f"Description: {book['description'][:200]}...\n"
-                    f"Image: {book['image_url']}"
+                    f"Image: {book['image_url']}\n"
+                    f"Preview: {book['preview_url']}"
                 )
             
             return "\n---\n".join(formatted_results)
@@ -609,7 +610,8 @@ class BookSearchTool(BaseTool):
                 'genre': ', '.join(volume_info.get('categories', ['General'])),
                 'description': volume_info.get('description', 'No description available.')[:300],
                 'rating': volume_info.get('averageRating') if volume_info.get('averageRating') is not None else 'N/A',
-                'image_url': volume_info.get('imageLinks', {}).get('thumbnail'),
+                'image_url': volume_info.get('imageLinks', {}).get('thumbnail', '').replace('http://', 'https://') if volume_info.get('imageLinks', {}).get('thumbnail') else None,
+                'preview_url': volume_info.get('previewLink') or volume_info.get('infoLink'),
             }
         except Exception as e:
             print(f"Error parsing book data: {e}")

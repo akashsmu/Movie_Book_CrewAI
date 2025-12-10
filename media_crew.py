@@ -316,12 +316,14 @@ class MediaRecommendationCrew:
                     "why_recommended": "Personalized explanation",
                     "similar_titles": ["Title1", "Title2", "Title3"],
                     "image_url": "https://...",
-                    "trailer_url": "https://www.youtube.com/..."
+                    "trailer_url": "https://www.youtube.com/...",
+                    "preview_url": "https://books.google.com/..."
                   }}
                 ]""",
                 agent=self.editor_agent,
                 expected_output="""Valid JSON array with 3-5 personalized media recommendations.
                 Each item must have: title, type, year, genre, rating, description, why_recommended, similar_titles, image_url.
+                Include 'preview_url' for books if available.
                 NO additional text outside JSON.""",
                 max_iter=3,
             )
@@ -722,7 +724,8 @@ class MediaRecommendationCrew:
             'why_recommended': ['why:', 'recommended because:', 'matches because:'],
             'type': ['type:'],
             'image_url': ['image:', 'cover:', 'poster:'],
-            'trailer_url': ['trailer:', 'video:', 'preview:']
+            'trailer_url': ['trailer:', 'video:'],
+            'preview_url': ['preview:', 'sample:', 'google books:']
         }
         
         for field, patterns in field_patterns.items():
