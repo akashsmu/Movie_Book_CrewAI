@@ -15,6 +15,10 @@ class MediaRecommenderApp:
         self.setup_page_config()
         self.personalization_manager = PersonalizationManager()
         
+        # Initialize session state for watchlist
+        if 'watchlist' not in st.session_state:
+            st.session_state.watchlist = []
+        
     def setup_page_config(self):
         st.set_page_config(
             page_title="AI Media Recommender",
@@ -52,6 +56,23 @@ class MediaRecommenderApp:
     def render_sidebar(self):
         with st.sidebar:
             st.title("🎬📚 Media Recommender")
+            
+            # Watchlist Section
+            st.markdown("---")
+            st.subheader("📑 Your Watchlist")
+            
+            # Show toast if item was just added
+            if 'watchlist_success' in st.session_state:
+                st.toast(st.session_state.watchlist_success, icon="✅")
+                del st.session_state.watchlist_success
+            
+            if 'watchlist' in st.session_state and st.session_state.watchlist:
+                for item in st.session_state.watchlist:
+                    emoji = "🎬" if item.get('type') == 'movie' else "📚"
+                    st.markdown(f"{emoji} **{item['title']}**")
+            else:
+                st.info("No items in watchlist yet. Save recommendations to see them here!")
+            
             st.markdown("---")
             
             # Media type selection
@@ -261,8 +282,19 @@ class MediaRecommenderApp:
                             self.personalization_manager.record_feedback(user_id, rec, False)
                             st.success("Thanks for your feedback!")
                     with col_actions[2]:
-                        if st.button("💾 Save", key=f"save_{i}"):
-                            st.success("Recommendation saved!")
+                        # Check if already in watchlist
+                        is_in_watchlist = rec in st.session_state.watchlist
+                        
+                        if is_in_watchlist:
+                            if st.button("🗑️ Unsave", key=f"unsave_{i}"):
+                                st.session_state.watchlist.remove(rec)
+                                st.session_state.watchlist_success = f"Removed '{rec['title']}' from Watchlist."
+                                st.rerun()
+                        else:
+                            if st.button("💾 Save", key=f"save_{i}"):
+                                st.session_state.watchlist.append(rec)
+                                st.session_state.watchlist_success = f"Added '{rec['title']}' to Watchlist!"
+                                st.rerun()
                 
                 st.markdown("---")
     
