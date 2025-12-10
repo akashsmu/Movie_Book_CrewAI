@@ -16,9 +16,13 @@ class MediaRecommenderApp:
         self.setup_page_config()
         self.personalization_manager = PersonalizationManager()
         
-        # Initialize session state for watchlist
+        # Initialize session state for user_id if not present (simple version)
+        if 'user_id' not in st.session_state:
+            st.session_state.user_id = "user_1" # Default user for now
+            
+        # Initialize session state for watchlist from persistent storage
         if 'watchlist' not in st.session_state:
-            st.session_state.watchlist = []
+            st.session_state.watchlist = self.personalization_manager.get_watchlist(st.session_state.user_id)
         
     def setup_page_config(self):
         st.set_page_config(
@@ -351,13 +355,19 @@ class MediaRecommenderApp:
                         
                         if is_in_watchlist:
                             if st.button("🗑️ Unsave", key=f"unsave_{i}"):
-                                st.session_state.watchlist.remove(rec)
-                                st.session_state.watchlist_success = f"Removed '{rec['title']}' from Bucketlist."
+                                # Update persistent storage
+                                self.personalization_manager.remove_from_watchlist(user_id, rec)
+                                # Update local state from storage to keep in sync
+                                st.session_state.watchlist = self.personalization_manager.get_watchlist(user_id)
+                                st.session_state.watchlist_success = f"Removed '{rec['title']}' from Watchlist."
                                 st.rerun()
                         else:
                             if st.button("💾 Save", key=f"save_{i}"):
-                                st.session_state.watchlist.append(rec)
-                                st.session_state.watchlist_success = f"Added '{rec['title']}' to Bucketlist!"
+                                # Update persistent storage
+                                self.personalization_manager.add_to_watchlist(user_id, rec)
+                                # Update local state from storage to keep in sync
+                                st.session_state.watchlist = self.personalization_manager.get_watchlist(user_id)
+                                st.session_state.watchlist_success = f"Added '{rec['title']}' to Watchlist!"
                                 st.rerun()
                     
                     # More Like This Pivot (Styled creatively)
