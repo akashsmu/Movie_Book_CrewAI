@@ -1696,3 +1696,30 @@
 2025-12-09 18:31:48,577 - media_crew - INFO - Validated 3 JSON recommendations
 2025-12-09 18:31:48,577 - media_crew - INFO - Successfully processed 3 recommendations
 2025-12-09 18:31:48,577 - media_crew - INFO - Crew execution completed in 524.58s. Returning 3 recommendations.
+2025-12-10 17:05:04,066 - media_crew - INFO - All agents initialized successfully
+2025-12-10 17:05:04,067 - media_crew - INFO - All tasks initialized successfully
+2025-12-10 17:05:04,067 - media_crew - INFO - MediaRecommendationCrew initialized successfully
+2025-12-10 17:05:04,067 - media_crew - INFO - Starting crew execution for request: action oriented detailed...
+2025-12-10 17:05:04,072 - media_crew - INFO - Starting crew kickoff (with timeout protection)...
+2025-12-10 17:05:06,931 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-10 17:05:06,941 - root - INFO - OpenAI API usage: {'prompt_tokens': 521, 'completion_tokens': 50, 'total_tokens': 571}
+2025-12-10 17:05:06,942 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-10 17:05:06,943 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-10 17:05:10,762 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-10 17:05:10,779 - root - INFO - OpenAI API usage: {'prompt_tokens': 961, 'completion_tokens': 121, 'total_tokens': 1082}
+2025-12-10 17:05:11,223 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-10 17:05:11,224 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-10 17:05:27,977 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-10 17:05:27,979 - root - INFO - OpenAI API usage: {'prompt_tokens': 1671, 'completion_tokens': 645, 'total_tokens': 2316}
+2025-12-10 17:05:27,980 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-10 17:05:27,981 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-10 17:05:46,821 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-10 17:05:46,823 - root - INFO - OpenAI API usage: {'prompt_tokens': 1107, 'completion_tokens': 623, 'total_tokens': 1730}
+2025-12-10 17:05:46,824 - media_crew - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-10 17:05:46,824 - media_crew - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-10 17:05:46,833 - media_crew - INFO - Crew kickoff completed in 42.76s
+2025-12-10 17:05:46,836 - media_crew - INFO - Processing crew result...
+2025-12-10 17:05:46,836 - media_crew - INFO - Successfully extracted JSON from result
+2025-12-10 17:05:46,838 - media_crew - INFO - Validated 3 JSON recommendations
+2025-12-10 17:05:46,838 - media_crew - INFO - Successfully processed 3 recommendations
+2025-12-10 17:05:46,840 - media_crew - INFO - Crew execution completed in 42.77s. Returning 3 recommendations.
