@@ -446,6 +446,7 @@ class PopularMoviesTool(BaseTool):
 
 class DiscoverMoviesInput(BaseModel):
     genre: str = Field(description="The genre to filter by (e.g., 'Action', 'Science Fiction')")
+    min_rating: Optional[float] = Field(default=None, description="Minimum rating (0-10) to filter by")
     sort_by: Optional[str] = Field(default="popularity.desc", description="Sort order (default: popularity.desc)")
 
 class DiscoverMoviesTool(BaseTool):
@@ -453,7 +454,7 @@ class DiscoverMoviesTool(BaseTool):
     description: str = "Find movies by genre with diverse results. Use this for broad genre requests like 'sci-fi movies' to get fresh recommendations."
     args_schema: type[BaseModel] = DiscoverMoviesInput
 
-    def _run(self, genre: str, sort_by: str = "popularity.desc") -> str:
+    def _run(self, genre: str, min_rating: Optional[float] = None, sort_by: str = "popularity.desc") -> str:
         try:
             api_key = os.getenv('TMDB_API_KEY')
             if not api_key:
@@ -488,7 +489,11 @@ class DiscoverMoviesTool(BaseTool):
                 'vote_count.gte': 100 # Ensure decent quality
             }
             
-            logger.debug(f"DiscoverMoviesTool: discovering genre={genre} (id={genre_id}) page={page}")
+            # Apply rating filter
+            if min_rating:
+                params['vote_average.gte'] = min_rating
+            
+            logger.debug(f"DiscoverMoviesTool: discovering genre={genre} (id={genre_id}) min_rating={min_rating} page={page}")
             response = _session.get(url, params=params, timeout=5)
             
             if response.status_code != 200:
