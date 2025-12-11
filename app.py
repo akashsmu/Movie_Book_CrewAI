@@ -200,6 +200,15 @@ class MediaRecommenderApp:
         # Use st.status to show progress
         with st.status("🤖 AI Agents are working...", expanded=True) as status:
             try:
+                # Show active configuration to user so they understand the context
+                config_details = [
+                    f"**Media Type:** {media_type}",
+                    f"**Genre:** {genre}",
+                    f"**Mood:** {mood}",
+                    f"**Timeframe:** {timeframe}"
+                ]
+                st.markdown(f"📋 **Configuration**: {' | '.join(config_details)}")
+                
                 st.write("Initializing crew...")
                 
                 # Get personalized context if enabled
