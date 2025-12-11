@@ -128,8 +128,80 @@ class MediaRecommenderApp:
     
     def handle_recommendation_request(self, user_input, media_type, genre, mood, timeframe, num_recommendations, use_personalization, user_id):
         """Handle the core logic of fetching and displaying recommendations"""
-        with st.spinner("🤔 Analyzing your request and searching for the best recommendations..."):
+        
+        # Mapping of tools to agent roles for fallback identification
+        TOOL_TO_AGENT = {
+            # Movie Agent Tools
+            'search_movies': 'Movie Recommendation Specialist',
+            'get_movie_details': 'Movie Recommendation Specialist', 
+            'get_popular_movies': 'Movie Recommendation Specialist',
+            'discover_movies': 'Movie Recommendation Specialist',
+            
+            # Book Agent Tools
+            'search_books': 'Book Recommendation Specialist',
+            'get_book_details': 'Book Recommendation Specialist',
+            
+            # Research Agent Tools
+            'search_news': 'Media Research Specialist',
+            'search_trending_media': 'Media Research Specialist',
+            'find_similar_titles': 'Media Research Specialist', # Shared tool but often used by Research/Specialists
+            
+            # Default
+            'Calculator': 'Analyst',
+        }
+
+        # Callback to stream thoughts
+        def stream_thought(step_output):
             try:
+                # Extract agent name
+                agent_name = None
+                
+                # 1. Try direct attribute
+                if hasattr(step_output, 'agent') and hasattr(step_output.agent, 'role'):
+                    agent_name = step_output.agent.role
+                
+                # 2. Try string representation if needed
+                if not agent_name and hasattr(step_output, 'agent'):
+                     agent_name = str(step_output.agent)
+                
+                # Extract tool
+                tool_name = ""
+                if hasattr(step_output, 'tool') and step_output.tool:
+                    tool_name = step_output.tool
+                
+                # 3. Fallback: Infer agent from tool
+                if (not agent_name or "Unknown" in agent_name) and tool_name:
+                    agent_name = TOOL_TO_AGENT.get(tool_name, "AI Specialist")
+                
+                # 4. Final Fallback
+                if not agent_name or "Unknown" in agent_name:
+                    agent_name = "Media Recommender AI"
+
+                # Extract thought
+                thought = ""
+                if hasattr(step_output, 'thought') and step_output.thought:
+                    thought = step_output.thought.strip()
+                
+                # If we have a thought, display it
+                if thought:
+                     # Clean up "Thought:" prefix if present
+                    if thought.startswith("Thought:"):
+                        thought = thought[len("Thought:"):].strip()
+                    st.write(f"**🧠 {agent_name}:** {thought}")
+                
+                # If tool usage
+                if tool_name:
+                    st.caption(f"🔧 Using tool: `{tool_name}`")
+                    
+            except Exception as e:
+                # print(f"DEBUG: Error in callback: {e}") # Debug only
+                pass # safely ignore callback errors to not break main flow
+
+        # Use st.status to show progress
+        with st.status("🤖 AI Agents are working...", expanded=True) as status:
+            try:
+                st.write("Initializing crew...")
+                
                 # Get personalized context if enabled
                 personalization_context = ""
                 if use_personalization:
@@ -144,7 +216,8 @@ class MediaRecommenderApp:
                     mood=mood if mood != "Any" else None,
                     timeframe=timeframe if timeframe != "Any" else None,
                     num_recommendations=num_recommendations,
-                    personalization_context=personalization_context
+                    personalization_context=personalization_context,
+                    step_callback=stream_thought
                 )
                 
                 # Store recommendations in session
@@ -153,13 +226,15 @@ class MediaRecommenderApp:
                 
                 # Update user history
                 if use_personalization:
-                    self.personalization_manager.update_user_history(
+                   self.personalization_manager.update_user_history(
                         user_id, user_input, recommendations
                     )
                 
+                status.update(label="✅ Recommendations found!", state="complete", expanded=False)
                 return True
                 
             except Exception as e:
+                status.update(label="❌ Error occurred", state="error")
                 st.error(f"Error getting recommendations: {str(e)}")
                 return False
 
@@ -372,7 +447,16 @@ class MediaRecommenderApp:
                     
                     # More Like This Pivot (Styled creatively)
                     if st.button("✨ More Like This", key=f"pivot_{i}", help="Find other recommendations like this one"):
-                        st.session_state.pivot_request = f"Find {rec.get('type', 'movie')}s similar to '{rec['title']}'"
+                        # Construct a richer query using the known similar titles to guide the agent
+                        base_query = f"Find {rec.get('type', 'movie')}s similar to '{rec['title']}'"
+                        
+                        similar_context = ""
+                        if rec.get('similar_titles'):
+                            # Take up to 3 similar titles to use as seeds
+                            seeds = ", ".join(rec['similar_titles'][:3])
+                            similar_context = f". specific examples of similar content include: {seeds}. Please behave like a recommender system that pivots off these specific examples."
+                        
+                        st.session_state.pivot_request = base_query + similar_context
                         st.rerun()
                 
                 st.markdown("---")
