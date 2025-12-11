@@ -40,6 +40,7 @@ class MediaRecommendationCrew:
         # Simple in-memory rating cache (title -> (timestamp, rating))
         self._rating_cache: Dict[str, Any] = {}
         self.RATING_CACHE_TTL = int(os.getenv('RATING_CACHE_TTL', '86400'))  # seconds, default 24h
+        self.external_step_callback = None
         self.setup_agents()
         self.setup_tasks()
         logger.info("MediaRecommendationCrew initialized successfully")
@@ -216,7 +217,7 @@ class MediaRecommendationCrew:
                 agent=self.movie_agent,
                 expected_output="""List of {num_recommendations} movie recommendations with complete details.
                 Each must include: title, year, genre, rating, description, why_recommended, similar_titles, image_url, trailer_url.""",
-                async_execution=True,
+                async_execution=False,
                 max_iter=5,
             )
             
@@ -256,7 +257,7 @@ class MediaRecommendationCrew:
                 agent=self.book_agent,
                 expected_output="""List of {num_recommendations} book recommendations with complete details.
                 Each must include: title, author, published_year, genre, rating, description, why_recommended, similar_titles, image_url.""",
-                async_execution=True,
+                async_execution=False,
                 max_iter=5,
             )
             
@@ -281,7 +282,7 @@ class MediaRecommendationCrew:
                 agent=self.research_agent,
                 expected_output="""Concise research summary with relevant trends, news, and cultural context.
                 Focus on information that enhances recommendation quality.""",
-                async_execution=True,
+                async_execution=False,
                 max_iter=2,
             )
             
@@ -295,6 +296,7 @@ class MediaRecommendationCrew:
                 - Add personalized explanations
                 - Rank by relevance and quality
                 - Incorporate research insights
+                - HANDLE IMPOSSIBLE REQUESTS: If a specific user request is impossible or contradictory (e.g., 'happy Titanic movie'), explicitly explain the compromise in `why_recommended` (e.g., 'While not happy, this is the definitive movie...').
                 
                 OUTPUT REQUIREMENTS:
                 - Valid JSON array only
@@ -337,7 +339,8 @@ class MediaRecommendationCrew:
     
     def run(self, user_request: str, media_type: str = "both", genre: Optional[str] = None,
             mood: Optional[str] = None, timeframe: Optional[str] = None,
-            num_recommendations: int = 3, personalization_context: str = "") -> List[Dict]:
+            num_recommendations: int = 3, personalization_context: str = "",
+            step_callback=None) -> List[Dict]:
         """
         Execute the media recommendation crew with enhanced error handling and monitoring
         
@@ -373,6 +376,9 @@ class MediaRecommendationCrew:
                 "personalization_context": personalization_context or "No personalization context"
             }
             
+            # Store external callback
+            self.external_step_callback = step_callback
+            
             # Update tasks with current inputs
             self._update_task_descriptions(task_inputs)
             
@@ -388,8 +394,10 @@ class MediaRecommendationCrew:
                 # Normal flow
                 crew = self._create_crew()
             
-            # Execute with timeout protection
-            result = self._execute_crew_with_timeout(crew, task_inputs, timeout=600)  # 10 minute timeout
+            # Execute crew
+            # We run directly in the main thread to ensure Streamlit callbacks work correctly
+            # (Streamlit contexts are thread-local)
+            result = crew.kickoff(inputs=task_inputs)
             
             # Parse and validate results
             recommendations = self._process_crew_result(result, user_request, media_type)
@@ -447,6 +455,10 @@ class MediaRecommendationCrew:
             # Optionally log thought/tool if available and needed
             # if hasattr(step_output, 'thought'):
             #    logger.debug(f"Thought: {step_output.thought}")
+                
+            # Execute external callback if registered
+            if self.external_step_callback:
+                self.external_step_callback(step_output)
                 
         except Exception as e:
             logger.warning(f"Error in step callback: {e}")
