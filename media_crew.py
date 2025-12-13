@@ -305,6 +305,11 @@ class MediaRecommendationCrew:
                 - Clear personalization for each item
                 
                 CRITICAL: Return ONLY valid JSON, no other text.
+                CRITICAL RULES FOR URLs:
+                - ONLY use image_url and trailer_url values that were provided by the Movie/Book agents
+                - DO NOT generate or invent URLs
+                - If a URL is missing from the specialist's output, set it to null
+                - NEVER create fake TMDB or YouTube URLs
                 
                 JSON FORMAT:
                 [
