@@ -55,6 +55,25 @@ class MediaRecommenderApp:
             border-radius: 5px;
             margin: 1rem 0;
         }
+        .compromise-alert {
+            padding: 1.2rem;
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
+            margin: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .compromise-alert-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 0.5rem;
+        }
+        .compromise-alert-text {
+            color: #856404;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
         </style>
         """, unsafe_allow_html=True)
     
@@ -343,6 +362,20 @@ class MediaRecommenderApp:
         st.markdown("---")
         st.markdown(f"### 🎉 Recommendations for: *{st.session_state.user_input}*")
         
+        # Check if any recommendations are compromises and display alert
+        compromise_recs = [rec for rec in recommendations if rec.get('is_compromise', False)]
+        if compromise_recs:
+            # Display a prominent alert about the compromise
+            st.markdown("""
+            <div class="compromise-alert">
+                <div class="compromise-alert-title">⚠️ About Your Request</div>
+                <div class="compromise-alert-text">
+                    Your request contained contradictory or impossible requirements. 
+                    We've provided the best possible recommendations and explained the compromises below.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
         for i, rec in enumerate(recommendations, 1):
             with st.container():
                 col1, col2 = st.columns([1, 3])
@@ -390,6 +423,10 @@ class MediaRecommenderApp:
                     
                     # Description
                     st.markdown(f"**Description:** {rec.get('description', 'No description available.')}")
+                    
+                    # Compromise explanation - Show prominently if this is a compromise
+                    if rec.get('is_compromise', False) and rec.get('compromise_explanation'):
+                        st.warning(f"**⚠️ Why this specific choice:** {rec['compromise_explanation']}")
                     
                     # Why it matches
                     if rec.get('why_recommended'):

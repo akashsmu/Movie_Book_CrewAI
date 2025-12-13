@@ -13,3 +13,9 @@ miniconda.sh
 Movie_Book_CrewAI.code-workspace
 user_preferences.json
 miniconda.sh
+
+# Cache directory
+.cache/
+
+# Log files
+*.log

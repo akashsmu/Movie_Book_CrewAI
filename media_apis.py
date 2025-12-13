@@ -13,6 +13,7 @@ from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 import urllib.parse
 import random # Added this import as it's used by DiscoverMoviesTool
+from cache_manager import PersistentCacheManager
 
 # Define input schemas
 class MovieSearchInput(BaseModel):
@@ -40,8 +41,8 @@ class NewsSearchInput(BaseModel):
 class TrendingMediaInput(BaseModel):
     media_type: str = Field(description="Type of media: 'movie' or 'book'")
 
-# Simple in-memory cache for API responses
-_api_cache: Dict[str, Any] = {}
+# Persistent cache for API responses (movies and books)
+_api_cache = PersistentCacheManager('api_cache.json')
 
 # Module logger
 logger = logging.getLogger(__name__)
@@ -63,14 +64,11 @@ def cache_api_call(ttl: int = 300):  # 5 minute cache
             key_args = args[1:] if (len(args) > 0 and hasattr(args[0], '__class__')) else args
             cache_key = f"{func.__name__}:{str(key_args)}:{str(kwargs)}"
 
-            # Check cache
-            if cache_key in _api_cache:
-                cache_time, result = _api_cache[cache_key]
-                if time.time() - cache_time < ttl:
-                    logger.debug(f"cache_api_call: HIT {cache_key}")
-                    return result
-                else:
-                    logger.debug(f"cache_api_call: STALE {cache_key}")
+            # Check cache using persistent manager
+            cached_result = _api_cache.get(cache_key, ttl=ttl)
+            if cached_result is not None:
+                logger.debug(f"cache_api_call: HIT {cache_key}")
+                return cached_result
             else:
                 logger.debug(f"cache_api_call: MISS {cache_key}")
 
@@ -79,7 +77,7 @@ def cache_api_call(ttl: int = 300):  # 5 minute cache
             result = func(*args, **kwargs)
             duration = time.time() - start
             logger.debug(f"cache_api_call: CALL {func.__name__} took {duration:.3f}s")
-            _api_cache[cache_key] = (time.time(), result)
+            _api_cache.set(cache_key, result)
             return result
         return wrapper
     return decorator

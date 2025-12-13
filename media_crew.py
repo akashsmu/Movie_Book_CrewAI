@@ -12,6 +12,7 @@ from datetime import datetime
 from media_apis import movie_tools, book_tools, search_tools
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from cache_manager import PersistentCacheManager
 
 # Configure logging
 logging.basicConfig(
@@ -37,8 +38,8 @@ class MediaRecommendationCrew:
         except Exception:
             self._http = requests.Session()
 
-        # Simple in-memory rating cache (title -> (timestamp, rating))
-        self._rating_cache: Dict[str, Any] = {}
+        # Persistent rating cache (for both movies and books)
+        self._rating_cache = PersistentCacheManager('rating_cache.json')
         self.RATING_CACHE_TTL = int(os.getenv('RATING_CACHE_TTL', '86400'))  # seconds, default 24h
         self.external_step_callback = None
         self.setup_agents()
@@ -73,10 +74,15 @@ class MediaRecommendationCrew:
             self.analysis_agent = Agent(
                 role="Media Request Analyst",
                 goal="""Analyze user requests to determine media type preference (movie/book/both) 
-                and extract specific preferences like genre, mood, timeframe, and themes.""",
+                and extract specific preferences like genre, mood, timeframe, and themes. 
+                CRITICALLY: Detect contradictory or impossible requirements (e.g., 'happy movie about tragic event', 
+                'short 3-hour film', 'lighthearted Holocaust story').""",
                 backstory="""You are an expert at understanding user preferences and intent in media requests. 
                 You excel at discerning whether someone wants movies, books, or both, and can extract key elements 
-                like genre, mood, themes, and specific requirements from their description with high accuracy.""",
+                like genre, mood, themes, and specific requirements from their description with high accuracy. 
+                You have a keen eye for contradictions - when users request combinations that are fundamentally 
+                incompatible (like 'happy Titanic movie' or 'uplifting tragedy'), you identify these conflicts 
+                so the recommendation team can provide the best possible compromise with clear explanations.""",
                 verbose=False,
                 allow_delegation=False,
                 llm=self.llm,
@@ -131,10 +137,13 @@ class MediaRecommendationCrew:
             # Editor Agent
             self.editor_agent = Agent(
                 role="Recommendation Editor",
-                goal="Review, refine and personalize recommendations to ensure they perfectly match user needs",
+                goal="Review, refine and personalize recommendations to ensure they perfectly match user needs, and clearly explain any compromises when requests are impossible",
                 backstory="""You are a senior editor who ensures all recommendations are high-quality, relevant, 
                 and personalized. You check for consistency, remove duplicates, add personalization touches, 
-                and ensure the final list is perfectly tailored to the user's stated preferences and context.""",
+                and ensure the final list is perfectly tailored to the user's stated preferences and context. 
+                When users request impossible combinations (e.g., 'happy Titanic movie'), you're skilled at 
+                identifying the best compromise and crafting clear, empathetic explanations of why certain 
+                aspects cannot be met, while highlighting what makes the recommendation still valuable.""",
                 verbose=False,
                 allow_delegation=False,
                 llm=self.llm,
@@ -163,7 +172,14 @@ class MediaRecommendationCrew:
                 2. Extract specific genres, themes, and moods
                 3. Identify timeframe preferences
                 4. Note any special requirements or constraints
-                4. Note any special requirements
+                5. **DETECT CONTRADICTIONS**: Identify if the request contains impossible or contradictory requirements
+                
+                CONTRADICTION DETECTION EXAMPLES:
+                - "Happy movie about the Titanic" (happy mood + tragic historical event)
+                - "Short 3-hour movie" (short duration + long duration)
+                - "Lighthearted comedy about the Holocaust" (comedic tone + tragic subject)
+                - "Uplifting book about depression" (mood contradiction)
+                - "Relaxing horror movie" (genre-mood conflict)
                 
                 OPTIMIZATION:
                 - If the request is simple (e.g. 'action movies', 'best sci-fi books'), skip detailed analysis and return a standard profile immediately.
@@ -174,7 +190,8 @@ class MediaRecommendationCrew:
                 - Key Genres: [comma-separated list]
                 - Mood/Tone: [primary mood]
                 - Timeframe: [specific preference]
-                - Special Requirements: [any specific asks]""",
+                - Special Requirements: [any specific asks]
+                - Contradiction Detected: [yes/no - explain if yes]""",
                 agent=self.analysis_agent,
                 expected_output="Detailed breakdown of user preferences including media type, genres, moods, and constraints.",
                 max_iter=3,
@@ -296,7 +313,24 @@ class MediaRecommendationCrew:
                 - Add personalized explanations
                 - Rank by relevance and quality
                 - Incorporate research insights
-                - HANDLE IMPOSSIBLE REQUESTS: If a specific user request is impossible or contradictory (e.g., 'happy Titanic movie'), explicitly explain the compromise in `why_recommended` (e.g., 'While not happy, this is the definitive movie...').
+                - HANDLE IMPOSSIBLE REQUESTS with special fields and explanations
+                
+                IMPOSSIBLE/CONTRADICTORY REQUEST HANDLING:
+                If the Analysis Agent detected contradictions OR you identify impossible requirements:
+                1. Set "is_compromise": true for affected recommendations
+                2. Add "compromise_explanation" field with a clear, empathetic explanation
+                3. In the explanation, specifically address:
+                   - What aspect of the request is impossible/contradictory
+                   - Why the combination doesn't exist or isn't feasible
+                   - What aspect was prioritized in the compromise
+                   - Why this recommendation is still the best match
+                
+                EXAMPLE for "happy movie about Titanic":
+                {{
+                  "is_compromise": true,
+                  "compromise_explanation": "The Titanic disaster was a real tragedy with over 1,500 deaths, so a 'happy' movie about it would be historically inappropriate and doesn't exist. The film 'Titanic' (1997) is recommended because it's the definitive cinematic portrayal of this event, featuring the touching love story of Jack and Rose which provides emotional uplift within the tragic context. While the overall tone is bittersweet rather than happy, the romance and human connection offer the most positive take possible on this historical event.",
+                  "why_recommended": "Best cinematic portrayal of the Titanic with uplifting romance elements"
+                }}
                 
                 OUTPUT REQUIREMENTS:
                 - Valid JSON array only
@@ -321,6 +355,8 @@ class MediaRecommendationCrew:
                     "rating": 8.5,
                     "description": "Brief description",
                     "why_recommended": "Personalized explanation",
+                    "is_compromise": false,
+                    "compromise_explanation": "Only include if is_compromise is true - detailed explanation of the mismatch",
                     "similar_titles": ["Title1", "Title2", "Title3"],
                     "image_url": "https://...",
                     "trailer_url": "https://www.youtube.com/...",
@@ -848,13 +884,12 @@ class MediaRecommendationCrew:
         api_key = os.getenv('TMDB_API_KEY')
         if not api_key:
             return None
-        # Check cache first
+        # Check cache first using persistent manager
         key = f"movie:{title.lower()}"
-        now = time.time()
-        cached = self._rating_cache.get(key)
-        if cached and now - cached[0] < self.RATING_CACHE_TTL:
+        cached = self._rating_cache.get(key, ttl=self.RATING_CACHE_TTL)
+        if cached is not None:
             logger.debug(f"_fetch_movie_rating: cache HIT for {key}")
-            return cached[1]
+            return cached
 
         try:
             params = {
@@ -875,8 +910,8 @@ class MediaRecommendationCrew:
 
             if results and results[0].get('vote_average'):
                 rating = round(float(results[0]['vote_average']), 1)
-                # Cache result
-                self._rating_cache[key] = (now, rating)
+                # Cache result using persistent manager
+                self._rating_cache.set(key, rating)
                 logger.debug(f"_fetch_movie_rating: cached rating {rating} for {key}")
                 return rating
 
@@ -888,13 +923,12 @@ class MediaRecommendationCrew:
     def _fetch_book_rating(self, title: str) -> Optional[float]:
         """Fetch book rating from Google Books"""
         api_key = os.getenv('GOOGLE_BOOKS_API_KEY')
-        # Check cache first
+        # Check cache first using persistent manager
         key = f"book:{title.lower()}"
-        now = time.time()
-        cached = self._rating_cache.get(key)
-        if cached and now - cached[0] < self.RATING_CACHE_TTL:
+        cached = self._rating_cache.get(key, ttl=self.RATING_CACHE_TTL)
+        if cached is not None:
             logger.debug(f"_fetch_book_rating: cache HIT for {key}")
-            return cached[1]
+            return cached
 
         try:
             params = {'q': title, 'maxResults': 1}
@@ -915,7 +949,8 @@ class MediaRecommendationCrew:
                 avg_rating = volume_info.get('averageRating')
                 if avg_rating is not None:
                     rating = float(avg_rating)
-                    self._rating_cache[key] = (now, rating)
+                    # Cache result using persistent manager
+                    self._rating_cache.set(key, rating)
                     logger.debug(f"_fetch_book_rating: cached rating {rating} for {key}")
                     return rating
 
