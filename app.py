@@ -237,15 +237,8 @@ class MediaRecommenderApp:
         
         # Display recommendations if available
         if 'recommendations' in st.session_state:
-            self.display_recommendations(st.session_state.recommendations,user_id=user_id)
+            display_recommendations(st.session_state.recommendations, self.personalization_manager, user_id)
             
-    def run(self):
-        self.setup_css()
-        self.render_main_interface()
-
-if __name__ == "__main__":
-    app = MediaRecommenderApp()
-    app.run()    
     def run(self):
         self.render_main_interface()
 
