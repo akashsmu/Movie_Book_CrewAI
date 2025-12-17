@@ -2531,3 +2531,120 @@
 2025-12-11 13:46:11,008 - media_crew - INFO - Validated 3 JSON recommendations
 2025-12-11 13:46:11,008 - media_crew - INFO - Successfully processed 3 recommendations
 2025-12-11 13:46:11,009 - media_crew - INFO - Crew execution completed in 145.72s. Returning 3 recommendations.
+2025-12-17 12:54:12,674 - cache_manager - INFO - No existing cache file found at .cache/rating_cache.json
+2025-12-17 12:54:12,674 - cache_manager - INFO - PersistentCacheManager initialized: .cache/rating_cache.json
+2025-12-17 12:54:12,817 - crew.agents - INFO - All agents initialized successfully
+2025-12-17 12:54:12,817 - crew.tasks - INFO - All tasks initialized successfully
+2025-12-17 12:54:12,817 - crew.orchestrator - INFO - MediaRecommendationCrew initialized successfully
+2025-12-17 12:54:12,817 - crew.orchestrator - INFO - Starting crew execution for request: I want to watch Breaking Bad...
+2025-12-17 12:54:15,884 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:54:15,900 - root - INFO - OpenAI API usage: {'prompt_tokens': 645, 'completion_tokens': 57, 'total_tokens': 702}
+2025-12-17 12:54:15,900 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:54:15,901 - crew.orchestrator - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-17 12:54:26,154 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:54:26,176 - root - INFO - OpenAI API usage: {'prompt_tokens': 1028, 'completion_tokens': 451, 'total_tokens': 1479}
+2025-12-17 12:54:26,741 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:54:26,741 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:54:36,661 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:54:36,663 - root - INFO - OpenAI API usage: {'prompt_tokens': 1767, 'completion_tokens': 477, 'total_tokens': 2244}
+2025-12-17 12:54:36,714 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:54:36,714 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:54:41,895 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:54:41,960 - root - INFO - OpenAI API usage: {'prompt_tokens': 2000, 'completion_tokens': 228, 'total_tokens': 2228}
+2025-12-17 12:54:41,960 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:54:41,961 - crew.orchestrator - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-17 12:54:57,450 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:54:57,452 - root - INFO - OpenAI API usage: {'prompt_tokens': 1020, 'completion_tokens': 688, 'total_tokens': 1708}
+2025-12-17 12:54:57,453 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:54:57,453 - crew.orchestrator - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-17 12:54:57,465 - crew.orchestrator - INFO - Processing crew result...
+2025-12-17 12:54:57,470 - crew.orchestrator - INFO - Successfully extracted JSON from result
+2025-12-17 12:54:57,471 - crew.orchestrator - INFO - Validated 3 JSON recommendations
+2025-12-17 12:54:57,471 - crew.orchestrator - INFO - Successfully processed 3 recommendations
+2025-12-17 12:54:57,471 - crew.orchestrator - INFO - Crew execution completed in 44.65s. Returning 3 recommendations.
+2025-12-17 12:54:57,471 - crew.orchestrator - INFO - Starting crew execution for request: Recommend some good sci-fi shows...
+2025-12-17 12:54:57,471 - crew.orchestrator - WARNING - Missing key in task inputs: '\n                "title"'
+2025-12-17 12:54:59,277 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:54:59,302 - root - INFO - OpenAI API usage: {'prompt_tokens': 645, 'completion_tokens': 58, 'total_tokens': 703}
+2025-12-17 12:54:59,303 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:54:59,303 - crew.orchestrator - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-17 12:55:06,354 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:55:06,356 - root - INFO - OpenAI API usage: {'prompt_tokens': 1028, 'completion_tokens': 356, 'total_tokens': 1384}
+2025-12-17 12:55:06,389 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:55:06,390 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:55:25,871 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:55:25,892 - root - INFO - OpenAI API usage: {'prompt_tokens': 2323, 'completion_tokens': 933, 'total_tokens': 3256}
+2025-12-17 12:55:25,896 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:55:25,896 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:55:47,960 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:55:47,969 - root - INFO - OpenAI API usage: {'prompt_tokens': 2413, 'completion_tokens': 641, 'total_tokens': 3054}
+2025-12-17 12:55:50,070 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:55:50,070 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:56:04,519 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:56:04,520 - root - INFO - OpenAI API usage: {'prompt_tokens': 2528, 'completion_tokens': 636, 'total_tokens': 3164}
+2025-12-17 12:56:04,524 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:56:04,524 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:56:14,391 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:56:14,410 - root - INFO - OpenAI API usage: {'prompt_tokens': 3826, 'completion_tokens': 306, 'total_tokens': 4132}
+2025-12-17 12:56:14,410 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:56:14,411 - crew.orchestrator - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-17 12:56:28,774 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:56:28,790 - root - INFO - OpenAI API usage: {'prompt_tokens': 1083, 'completion_tokens': 608, 'total_tokens': 1691}
+2025-12-17 12:56:28,791 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:56:28,792 - crew.orchestrator - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-17 12:56:28,800 - crew.orchestrator - INFO - Processing crew result...
+2025-12-17 12:56:28,801 - crew.orchestrator - INFO - Attempting structured text parsing
+2025-12-17 12:56:28,804 - crew.orchestrator - WARNING - Could not parse result using any method
+2025-12-17 12:56:28,804 - crew.orchestrator - WARNING - No recommendations parsed from crew result, using fallback
+2025-12-17 12:56:28,804 - crew.orchestrator - INFO - Using fallback recommendations for: Recommend some good sci-fi shows
+2025-12-17 12:56:28,805 - crew.orchestrator - INFO - Crew execution completed in 91.33s. Returning 2 recommendations.
+2025-12-17 12:59:00,953 - cache_manager - INFO - No existing cache file found at .cache/rating_cache.json
+2025-12-17 12:59:00,953 - cache_manager - INFO - PersistentCacheManager initialized: .cache/rating_cache.json
+2025-12-17 12:59:01,096 - crew.agents - INFO - All agents initialized successfully
+2025-12-17 12:59:01,096 - crew.tasks - INFO - All tasks initialized successfully
+2025-12-17 12:59:01,096 - crew.orchestrator - INFO - MediaRecommendationCrew initialized successfully
+2025-12-17 12:59:01,096 - crew.orchestrator - INFO - Starting crew execution for request: I want to watch Breaking Bad...
+2025-12-17 12:59:02,842 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:59:02,857 - root - INFO - OpenAI API usage: {'prompt_tokens': 645, 'completion_tokens': 57, 'total_tokens': 702}
+2025-12-17 12:59:02,857 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:59:02,858 - crew.orchestrator - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-17 12:59:10,315 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:59:10,326 - root - INFO - OpenAI API usage: {'prompt_tokens': 1115, 'completion_tokens': 332, 'total_tokens': 1447}
+2025-12-17 12:59:10,758 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:59:10,758 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:59:17,226 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:59:17,227 - root - INFO - OpenAI API usage: {'prompt_tokens': 1847, 'completion_tokens': 282, 'total_tokens': 2129}
+2025-12-17 12:59:17,228 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:59:17,228 - crew.orchestrator - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-17 12:59:24,514 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:59:24,530 - root - INFO - OpenAI API usage: {'prompt_tokens': 1061, 'completion_tokens': 276, 'total_tokens': 1337}
+2025-12-17 12:59:24,531 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:59:24,531 - crew.orchestrator - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-17 12:59:24,535 - crew.orchestrator - INFO - Processing crew result...
+2025-12-17 12:59:24,536 - crew.orchestrator - INFO - Successfully extracted JSON from result
+2025-12-17 12:59:24,538 - crew.orchestrator - INFO - Validated 1 JSON recommendations
+2025-12-17 12:59:24,538 - crew.orchestrator - INFO - Successfully processed 1 recommendations
+2025-12-17 12:59:24,538 - crew.orchestrator - INFO - Crew execution completed in 23.44s. Returning 1 recommendations.
+2025-12-17 12:59:24,538 - crew.orchestrator - INFO - Starting crew execution for request: Recommend some good sci-fi shows...
+2025-12-17 12:59:24,538 - crew.orchestrator - WARNING - Missing key in task inputs: '\n                "title"'
+2025-12-17 12:59:26,148 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:59:26,159 - root - INFO - OpenAI API usage: {'prompt_tokens': 645, 'completion_tokens': 57, 'total_tokens': 702}
+2025-12-17 12:59:26,159 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:59:26,159 - crew.orchestrator - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-17 12:59:41,100 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:59:41,111 - root - INFO - OpenAI API usage: {'prompt_tokens': 1115, 'completion_tokens': 908, 'total_tokens': 2023}
+2025-12-17 12:59:41,116 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:59:41,116 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:59:46,175 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 12:59:46,190 - root - INFO - OpenAI API usage: {'prompt_tokens': 1851, 'completion_tokens': 251, 'total_tokens': 2102}
+2025-12-17 12:59:46,191 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 12:59:46,191 - crew.orchestrator - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-17 13:00:01,571 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-12-17 13:00:01,587 - root - INFO - OpenAI API usage: {'prompt_tokens': 1033, 'completion_tokens': 743, 'total_tokens': 1776}
+2025-12-17 13:00:01,588 - crew.orchestrator - INFO - Agent Step: Unknown Agent is executing a step...
+2025-12-17 13:00:01,588 - crew.orchestrator - INFO - Task Completion: Unknown Agent has finished their task.
+2025-12-17 13:00:01,596 - crew.orchestrator - INFO - Processing crew result...
+2025-12-17 13:00:01,599 - crew.orchestrator - INFO - Successfully extracted JSON from result
+2025-12-17 13:00:01,600 - crew.orchestrator - INFO - Validated 3 JSON recommendations
+2025-12-17 13:00:01,600 - crew.orchestrator - INFO - Successfully processed 3 recommendations
+2025-12-17 13:00:01,600 - crew.orchestrator - INFO - Crew execution completed in 37.06s. Returning 3 recommendations.

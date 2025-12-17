@@ -4,7 +4,7 @@ from crewai import Agent
 from langchain_openai import ChatOpenAI
 import logging
 
-from api import movie_tools, book_tools, search_tools
+from api import movie_tools, book_tools, tv_tools, search_tools
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +23,12 @@ def create_agents(llm: ChatOpenAI) -> dict:
         # Analysis Agent - Determines user intent and media type
         analysis_agent = Agent(
             role="Media Request Analyst",
-            goal="""Analyze user requests to determine media type preference (movie/book/both) 
+            goal="""Analyze user requests to determine media type preference (movie/book/tv series) 
             and extract specific preferences like genre, mood, timeframe, and themes. 
             CRITICALLY: Detect contradictory or impossible requirements (e.g., 'happy movie about tragic event', 
             'short 3-hour film', 'lighthearted Holocaust story').""",
             backstory="""You are an expert at understanding user preferences and intent in media requests. 
-            You excel at discerning whether someone wants movies, books, or both, and can extract key elements 
+            You excel at discerning whether someone wants movies, books, or TV shows, and can extract key elements 
             like genre, mood, themes, and specific requirements from their description with high accuracy. 
             You have a keen eye for contradictions - when users request combinations that are fundamentally 
             incompatible (like 'happy Titanic movie' or 'uplifting tragedy'), you identify these conflicts 
@@ -70,6 +70,24 @@ def create_agents(llm: ChatOpenAI) -> dict:
             max_rpm=20
         )
         
+        # TV Series Specialist Agent
+        tv_agent = Agent(
+            role="TV Series Recommendation Specialist",
+            goal="Find highly-rated, relevant TV show recommendations using proper tools (Search vs Discover)",
+            backstory="""You are a television expert with deep knowledge of TV series.
+        CRITICAL TOOL USAGE:
+        1. If the user asks for a SPECIFIC show (e.g., "Breaking Bad", "The Office"), you MUST use 'search_tv_shows' first.
+        2. If the user asks for a GENRE or general recommendations (e.g., "Sci-Fi shows", "Funny sitcoms"), use 'discover_tv_shows'.
+        3. Do NOT use search for genres. Do NOT use discover for specific titles.
+        You understand the nuances of different TV formats.""",
+            verbose=False,
+            allow_delegation=False,
+            llm=llm,
+            tools=tv_tools + [search_tools[0]], # tv tools + similar_titles_tool
+            max_iter=10,
+            max_rpm=20
+        )
+        
         # Research Agent
         research_agent = Agent(
             role="Media Research Specialist",
@@ -107,6 +125,7 @@ def create_agents(llm: ChatOpenAI) -> dict:
             'analysis_agent': analysis_agent,
             'movie_agent': movie_agent,
             'book_agent': book_agent,
+            'tv_agent': tv_agent,
             'research_agent': research_agent,
             'editor_agent': editor_agent
         }

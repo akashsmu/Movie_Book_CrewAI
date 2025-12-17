@@ -124,9 +124,15 @@ class MediaRecommenderApp:
                 
                 # Initialize crew and get recommendations
                 crew = MediaRecommendationCrew()
+                
+                # Map UI media type to internal type
+                internal_media_type = media_type.lower()
+                if media_type == "TV Series":
+                    internal_media_type = "tv"
+                
                 recommendations = crew.run(
                     user_request=user_input,
-                    media_type=media_type.lower(),
+                    media_type=internal_media_type,
                     genre=genre if genre != "Any" else None,
                     mood=mood if mood != "Any" else None,
                     timeframe=timeframe if timeframe != "Any" else None,

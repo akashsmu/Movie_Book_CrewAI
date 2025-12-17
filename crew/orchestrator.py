@@ -11,7 +11,7 @@ import logging
 from datetime import datetime
 
 # Import from new modular API structure
-from api import movie_tools, book_tools, search_tools
+from api import movie_tools, book_tools, tv_tools, search_tools
 from crew.agents import create_agents
 from crew.tasks import create_tasks
 from requests.adapters import HTTPAdapter
@@ -42,7 +42,7 @@ class MediaRecommendationCrew:
         except Exception:
             self._http = requests.Session()
 
-        # Persistent rating cache (for both movies and books)
+        # Persistent rating cache (for movies, books, and TV)
         self._rating_cache = PersistentCacheManager('rating_cache.json')
         self.RATING_CACHE_TTL = int(os.getenv('RATING_CACHE_TTL', '86400'))  # seconds, default 24h
         self.external_step_callback = None
@@ -52,6 +52,7 @@ class MediaRecommendationCrew:
         self.analysis_agent = agents['analysis_agent']
         self.movie_agent = agents['movie_agent']
         self.book_agent = agents['book_agent']
+        self.tv_agent = agents['tv_agent']
         self.research_agent = agents['research_agent']
         self.editor_agent = agents['editor_agent']
         
@@ -59,6 +60,7 @@ class MediaRecommendationCrew:
         self.analysis_task = tasks['analysis_task']
         self.movie_task = tasks['movie_task']
         self.book_task = tasks['book_task']
+        self.tv_series_task = tasks['tv_series_task']
         self.research_task = tasks['research_task']
         self.editor_task = tasks['editor_task']
         
@@ -85,7 +87,7 @@ class MediaRecommendationCrew:
             logger.error(f"Failed to setup LLM: {e}")
             raise
     
-    def run(self, user_request: str, media_type: str = "both", genre: Optional[str] = None,
+    def run(self, user_request: str, media_type: str = "movie", genre: Optional[str] = None,
             mood: Optional[str] = None, timeframe: Optional[str] = None,
             num_recommendations: int = 3, personalization_context: str = "",
             step_callback=None) -> List[Dict]:
@@ -94,7 +96,7 @@ class MediaRecommendationCrew:
         
         Args:
             user_request: The user's media request
-            media_type: Type of media ('movie', 'book', 'both')
+            media_type: Type of media ('movie', 'book', 'tv')
             genre: Preferred genre
             mood: Desired mood/tone
             timeframe: Time period preference
@@ -107,6 +109,9 @@ class MediaRecommendationCrew:
         start_time = time.time()
         logger.info(f"Starting crew execution for request: {user_request[:100]}...")
         
+        # Clear previous trace
+        self.latest_trace = []
+
         try:
             # Validate inputs
             self._validate_inputs(user_request, media_type, num_recommendations)
@@ -135,8 +140,6 @@ class MediaRecommendationCrew:
             if fast_path_match:
                 logger.info(f"Fast Path triggered: {fast_path_match}")
                 # Bypass Analysis Agent
-                # We need to manually inject the "analysis" result or just configure the crew to skip the analysis task
-                # Simplest way: Create a custom crew list excluding analysis_task
                 crew = self._create_fast_path_crew(fast_path_match)
             else:
                 # Normal flow
@@ -165,15 +168,14 @@ class MediaRecommendationCrew:
             if hasattr(self, '_current_media_type'):
                 del self._current_media_type  # Clean up any stored state
 
-
-
     def _validate_inputs(self, user_request: str, media_type: str, num_recommendations: int):
         """Validate input parameters"""
         if not user_request or not user_request.strip():
             raise ValueError("User request cannot be empty")
         
-        if media_type not in ['movie', 'book', 'both']:
-            raise ValueError("Media type must be 'movie', 'book', or 'both'")
+        valid_types = ['movie', 'book', 'tv']
+        if media_type not in valid_types:
+            raise ValueError(f"Media type must be one of {valid_types}")
         
         if not 1 <= num_recommendations <= 10:
             raise ValueError("Number of recommendations must be between 1 and 10")
@@ -184,6 +186,7 @@ class MediaRecommendationCrew:
             self.analysis_task.description = self.analysis_task.description.format(**task_inputs)
             self.movie_task.description = self.movie_task.description.format(**task_inputs)
             self.book_task.description = self.book_task.description.format(**task_inputs)
+            self.tv_series_task.description = self.tv_series_task.description.format(**task_inputs)
             self.research_task.description = self.research_task.description.format(**task_inputs)
             self.editor_task.description = self.editor_task.description.format(**task_inputs)
         except KeyError as e:
@@ -199,14 +202,16 @@ class MediaRecommendationCrew:
             
             # Log the step occurrence
             logger.info(f"Agent Step: {agent_role} is executing a step...")
-            
-            # Optionally log thought/tool if available and needed
-            # if hasattr(step_output, 'thought'):
-            #    logger.debug(f"Thought: {step_output.thought}")
                 
             # Execute external callback if registered
             if self.external_step_callback:
                 self.external_step_callback(step_output)
+            
+            # Capture trace for Ragas
+            if hasattr(step_output, 'result'):
+                self.latest_trace.append(str(step_output.result))
+            elif isinstance(step_output, (str, dict, list)):
+                self.latest_trace.append(str(step_output))
                 
         except Exception as e:
             logger.warning(f"Error in step callback: {e}")
@@ -225,34 +230,49 @@ class MediaRecommendationCrew:
     def _check_fast_path(self, user_request: str) -> Optional[Dict]:
         """Check if request allows for fast path execution"""
         # Simple regex for "genre media_type" patterns
-        # e.g. "sci fi movies", "action books", "comedy movie"
         
         request = user_request.lower().strip()
         
-        # Movie patterns
-        movie_match = re.search(r'^(action|adventure|animation|comedy|crime|documentary|drama|family|fantasy|history|horror|music|mystery|romance|sci-fi|sci fi|science fiction|thriller|war|western)\s+movies?$', request)
-        if movie_match:
-            # Normalize genre for API
-            genre = movie_match.group(1)
-            if genre == 'sci fi': genre = 'sci-fi'
-            return {"type": "movie", "genre": genre}
+        # Patterns
+        type_patterns = {
+            'movie': r'\s+movies?$',
+            'book': r'\s+books?$',
+            'tv': r'\s+(tv|shows?|series)$'
+        }
+        
+        genres = r'(action|adventure|animation|comedy|crime|documentary|drama|family|fantasy|history|horror|music|mystery|romance|sci-fi|sci fi|science fiction|thriller|war|western)'
+        
+        for m_type, pattern_suffix in type_patterns.items():
+            pattern = f"^{genres}{pattern_suffix}"
+            match = re.search(pattern, request)
+            if match:
+                genre = match.group(1)
+                if genre == 'sci fi': genre = 'sci-fi'
+                return {"type": m_type, "genre": genre}
             
         return None
 
     def _create_fast_path_crew(self, context: Dict) -> Crew:
         """Create a simplified crew for fast execution"""
         tasks = []
+        agents = []
         
         # Add specific task based on detected type
         if context['type'] == 'movie':
-            # Pre-inject genre into task description if possible, or reliance on agent to pick it up from user_request (which is preserved)
-            # Actually, _update_task_descriptions already updated description with {user_request}
             tasks.append(self.movie_task)
+            agents.append(self.movie_agent)
+        elif context['type'] == 'book':
+            tasks.append(self.book_task)
+            agents.append(self.book_agent)
+        elif context['type'] == 'tv':
+            tasks.append(self.tv_series_task)
+            agents.append(self.tv_agent)
             
         tasks.append(self.editor_task)
+        agents.append(self.editor_agent)
         
         return Crew(
-            agents=[self.movie_agent, self.editor_agent], # Only relevant agents
+            agents=agents,
             tasks=tasks,
             process=Process.sequential,
             verbose=True,
@@ -265,24 +285,31 @@ class MediaRecommendationCrew:
     def _create_crew(self) -> Crew:
         """Create crew with production configuration"""
         tasks = [self.analysis_task]
+        agents = [self.analysis_agent]
         
-        media_type = getattr(self, '_current_media_type', 'both')
+        media_type = getattr(self, '_current_media_type', 'movie')
     
-        if media_type in ["movie", "both"]:
+        if media_type == "movie":
             tasks.append(self.movie_task)
-        if media_type in ["book", "both"]:
+            agents.append(self.movie_agent)
+        elif media_type == "book":
             tasks.append(self.book_task)
+            agents.append(self.book_agent)
+        elif media_type == "tv":
+            tasks.append(self.tv_series_task)
+            agents.append(self.tv_agent)
 
         user_request = getattr(self, '_current_user_request', '')
         if any(word in user_request.lower() for word in ['trending', 'new', 'recent', 'latest', 'upcoming', 'update', 'news', 'current']):
             tasks.append(self.research_task)
+            if self.research_agent not in agents:
+                agents.append(self.research_agent)
         
-        #tasks.append(self.research_task)
         tasks.append(self.editor_task)
+        agents.append(self.editor_agent)
 
         return Crew(
-            agents=[self.analysis_agent, self.movie_agent, self.book_agent,
-                    self.research_agent, self.editor_agent],
+            agents=agents,
             tasks=tasks,
             process=Process.sequential,
             verbose=True,  # Set to True for extensive logging
@@ -293,15 +320,8 @@ class MediaRecommendationCrew:
         )
     
     def _execute_crew_with_timeout(self, crew: Crew, inputs: Dict[str, Any], timeout: int = 120):
-        """Execute crew with timeout protection.
-
-        Runs crew.kickoff in a background thread and enforces a hard timeout on waiting.
-        If the timeout is reached, we return None (caller should handle fallback).
-        Note: underlying background thread may still be running; this prevents the API
-        from blocking the caller and limits user-facing latency.
-        """
+        """Execute crew with timeout protection."""
         start_time = time.time()
-
         logger.info("Starting crew kickoff (with timeout protection)...")
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
@@ -313,7 +333,6 @@ class MediaRecommendationCrew:
                 return result
             except concurrent.futures.TimeoutError:
                 logger.error(f"Crew kickoff exceeded timeout of {timeout}s; returning early and using fallback")
-                # Attempt to cancel the future; if it is already running, cancel() returns False
                 try:
                     future.cancel()
                 except Exception:
@@ -357,7 +376,7 @@ class MediaRecommendationCrew:
     def _parse_result(self, result) -> List[Dict]:
         """Parse crew result with enhanced error handling"""
         try:
-            logger.debug(f"Raw result type: {type(result)}, length: {len(str(result)) if hasattr(result, '__len__') else 'N/A'}")
+            logger.debug(f"Raw result type: {type(result)}")
             
             # Handle different result types
             if isinstance(result, list):
@@ -365,7 +384,6 @@ class MediaRecommendationCrew:
                 return result
             
             result_str = str(result)
-            logger.debug(f"Result string preview: {result_str[:200]}...")
             
             # Try JSON extraction first
             json_match = self._extract_json_from_text(result_str)
@@ -469,7 +487,7 @@ class MediaRecommendationCrew:
     def _is_new_recommendation(self, line: str, current_count: int = 0) -> bool:
         """Check if line indicates a new recommendation"""
         new_rec_indicators = [
-            'title:', 'movie:', 'book:', 'recommendation', '###', '---',
+            'title:', 'movie:', 'book:', 'tv:', 'recommendation', '###', '---',
             str(current_count + 1) + '.',  # "1.", "2.", etc.
         ]
         return any(indicator in line.lower() for indicator in new_rec_indicators)
@@ -477,8 +495,8 @@ class MediaRecommendationCrew:
     def _extract_field(self, line: str, current_rec: Dict):
         """Extract field from line and add to current recommendation"""
         field_patterns = {
-            'title': ['title:', 'movie:', 'book:'],
-            'year': ['year:', 'released:', 'published:'],
+            'title': ['title:', 'movie:', 'book:', 'tv:', 'show:'],
+            'year': ['year:', 'released:', 'published:', 'aired:'],
             'genre': ['genre:', 'category:'],
             'rating': ['rating:', 'score:'],
             'description': ['description:', 'summary:', 'plot:'],
@@ -498,26 +516,22 @@ class MediaRecommendationCrew:
     
     def _is_valid_recommendation(self, rec: Dict) -> bool:
         """Check if recommendation has minimum required fields"""
-        return bool(rec.get('title') and rec.get('type'))
+        return bool(rec.get('title')) # Relaxed check, type inferred if missing
     
     def _post_process_recommendations(self, recommendations: List[Dict]) -> List[Dict]:
         """Add missing fields and validate recommendations"""
         for rec in recommendations:
-            # Ensure required fields
-            rec.setdefault('rating', 'N/A')
-            rec.setdefault('similar_titles', [])
             rec.setdefault('rating', 'N/A')
             rec.setdefault('similar_titles', [])
             rec.setdefault('description', 'No description available')
             rec.setdefault('why_recommended', 'Matches your preferences')
             rec.setdefault('image_url', None)
             rec.setdefault('trailer_url', None)
+            rec.setdefault('type', 'unknown') # Placeholder
             
-            # Clean up fields
             if 'year' in rec:
-                rec['year'] = str(rec['year']).split('-')[0]  # Extract year from date
+                rec['year'] = str(rec['year']).split('-')[0]
             
-            # Ensure rating is properly formatted
             self._normalize_rating(rec)
         
         return recommendations
@@ -529,7 +543,6 @@ class MediaRecommendationCrew:
             rec['rating'] = round(float(rating), 1)
         elif isinstance(rating, str):
             try:
-                # Handle "8.5/10", "4.5/5", etc.
                 if '/' in rating:
                     rec['rating'] = round(float(rating.split('/')[0].strip()), 1)
                 else:
@@ -542,8 +555,6 @@ class MediaRecommendationCrew:
         for rec in recommendations:
             if not rec.get('title'):
                 logger.warning(f"Recommendation missing title: {rec}")
-            if not rec.get('type') in ['movie', 'book']:
-                logger.warning(f"Invalid type in recommendation: {rec.get('type')}")
     
     def _enrich_ratings(self, recommendations: List[Dict]):
         """Enhanced rating enrichment with better error handling"""
@@ -580,6 +591,8 @@ class MediaRecommendationCrew:
                 return self._fetch_movie_rating(title)
             elif media_type == 'book':
                 return self._fetch_book_rating(title)
+            elif media_type == 'tv':
+                return self._fetch_tv_rating(title)
         except Exception as e:
             logger.debug(f"Rating fetch failed for {title}: {e}")
             return None
@@ -589,173 +602,90 @@ class MediaRecommendationCrew:
     def _fetch_movie_rating(self, title: str) -> Optional[float]:
         """Fetch movie rating from TMDB"""
         api_key = os.getenv('TMDB_API_KEY')
-        if not api_key:
-            return None
-        # Check cache first using persistent manager
+        if not api_key: return None
+        
         key = f"movie:{title.lower()}"
         cached = self._rating_cache.get(key, ttl=self.RATING_CACHE_TTL)
-        if cached is not None:
-            logger.debug(f"_fetch_movie_rating: cache HIT for {key}")
-            return cached
+        if cached is not None: return cached
 
         try:
-            params = {
-                'api_key': api_key,
-                'query': title,
-                'language': 'en-US',
-                'page': 1
-            }
-
-            start = time.time()
+            params = {'api_key': api_key, 'query': title, 'language': 'en-US', 'page': 1}
             response = self._http.get('https://api.themoviedb.org/3/search/movie', params=params, timeout=10)
-            duration = time.time() - start
-            logger.debug(f"_fetch_movie_rating: TMDB responded status={getattr(response,'status_code',None)} in {duration:.3f}s for title={title}")
-            response.raise_for_status()
-
-            data = response.json()
-            results = data.get('results', [])
-
-            if results and results[0].get('vote_average'):
-                rating = round(float(results[0]['vote_average']), 1)
-                # Cache result using persistent manager
-                self._rating_cache.set(key, rating)
-                logger.debug(f"_fetch_movie_rating: cached rating {rating} for {key}")
-                return rating
-
-        except Exception as e:
-            logger.debug(f"TMDB API error for {title}: {e}")
-
+            if response.status_code == 200:
+                results = response.json().get('results', [])
+                if results and results[0].get('vote_average'):
+                    rating = round(float(results[0]['vote_average']), 1)
+                    self._rating_cache.set(key, rating)
+                    return rating
+        except Exception:
+            pass
         return None
     
     def _fetch_book_rating(self, title: str) -> Optional[float]:
         """Fetch book rating from Google Books"""
         api_key = os.getenv('GOOGLE_BOOKS_API_KEY')
-        # Check cache first using persistent manager
         key = f"book:{title.lower()}"
         cached = self._rating_cache.get(key, ttl=self.RATING_CACHE_TTL)
-        if cached is not None:
-            logger.debug(f"_fetch_book_rating: cache HIT for {key}")
-            return cached
+        if cached is not None: return cached
 
         try:
             params = {'q': title, 'maxResults': 1}
-            if api_key:
-                params['key'] = api_key
-
-            start = time.time()
+            if api_key: params['key'] = api_key
             response = self._http.get('https://www.googleapis.com/books/v1/volumes', params=params, timeout=10)
-            duration = time.time() - start
-            logger.debug(f"_fetch_book_rating: Google Books responded status={getattr(response,'status_code',None)} in {duration:.3f}s for title={title}")
-            response.raise_for_status()
+            if response.status_code == 200:
+                items = response.json().get('items', [])
+                if items:
+                    avg_rating = items[0].get('volumeInfo', {}).get('averageRating')
+                    if avg_rating is not None:
+                        rating = float(avg_rating)
+                        self._rating_cache.set(key, rating)
+                        return rating
+        except Exception:
+            pass
+        return None
 
-            data = response.json()
-            items = data.get('items', [])
+    def _fetch_tv_rating(self, title: str) -> Optional[float]:
+        """Fetch TV rating from TMDB"""
+        api_key = os.getenv('TMDB_API_KEY')
+        if not api_key: return None
+        
+        key = f"tv:{title.lower()}"
+        cached = self._rating_cache.get(key, ttl=self.RATING_CACHE_TTL)
+        if cached is not None: return cached
 
-            if items:
-                volume_info = items[0].get('volumeInfo', {})
-                avg_rating = volume_info.get('averageRating')
-                if avg_rating is not None:
-                    rating = float(avg_rating)
-                    # Cache result using persistent manager
+        try:
+            params = {'api_key': api_key, 'query': title, 'language': 'en-US', 'page': 1}
+            response = self._http.get('https://api.themoviedb.org/3/search/tv', params=params, timeout=10)
+            if response.status_code == 200:
+                results = response.json().get('results', [])
+                if results and results[0].get('vote_average'):
+                    rating = round(float(results[0]['vote_average']), 1)
                     self._rating_cache.set(key, rating)
-                    logger.debug(f"_fetch_book_rating: cached rating {rating} for {key}")
                     return rating
-
-        except Exception as e:
-            logger.debug(f"Google Books API error for {title}: {e}")
-
+        except Exception:
+            pass
         return None
     
     def _get_fallback_recommendations(self, user_request: str, media_type: str) -> List[Dict]:
         """Provide high-quality fallback recommendations"""
         logger.info(f"Using fallback recommendations for: {user_request}")
         
-        # Enhanced fallback data with more variety
         fallback_data = {
             'movie': [
-                {
-                    "title": "Inception",
-                    "type": "movie",
-                    "year": "2010",
-                    "genre": "Sci-Fi, Thriller",
-                    "rating": 8.8,
-                    "description": "A thief who steals corporate secrets through dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
-                    "why_recommended": "Mind-bending plot with stunning visuals perfect for fans of complex sci-fi narratives.",
-                    "similar_titles": ["The Matrix", "Interstellar", "Tenet"]
-                },
-                {
-                    "title": "The Shawshank Redemption",
-                    "type": "movie", 
-                    "year": "1994",
-                    "genre": "Drama",
-                    "rating": 9.3,
-                    "description": "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
-                    "why_recommended": "Powerful storytelling and character development that resonates emotionally with viewers.",
-                    "similar_titles": ["The Green Mile", "Forrest Gump", "The Godfather"]
-                },
-                {
-                    "title": "Parasite",
-                    "type": "movie",
-                    "year": "2019",
-                    "genre": "Thriller, Drama",
-                    "rating": 8.6,
-                    "description": "Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.",
-                    "why_recommended": "Award-winning social thriller that masterfully blends multiple genres.",
-                    "similar_titles": ["Snowpiercer", "Memories of Murder", "Shoplifters"]
-                }
+                {"title": "Inception", "type": "movie", "year": "2010", "genre": "Sci-Fi, Thriller", "rating": 8.8, "description": "A thief who steals corporate secrets through dream-sharing technology.", "why_recommended": "Masterpiece of sci-fi cinema.", "similar_titles": ["The Matrix"]},
+                {"title": "The Dark Knight", "type": "movie", "year": "2008", "genre": "Action, Crime", "rating": 9.0, "description": "Batman sets out to dismantle the remaining criminal organizations.", "why_recommended": "Defining superhero movie.", "similar_titles": ["Batman Begins"]}
             ],
             'book': [
-                {
-                    "title": "Project Hail Mary",
-                    "type": "book",
-                    "year": "2021", 
-                    "genre": "Science Fiction",
-                    "rating": 4.8,
-                    "description": "A lone astronaut must save the earth from disaster in this high-stakes sci-fi adventure filled with humor and science.",
-                    "why_recommended": "Engaging hard sci-fi with compelling characters and creative problem-solving.",
-                    "similar_titles": ["The Martian", "Artemis", "Three Body Problem"]
-                },
-                {
-                    "title": "The Midnight Library",
-                    "type": "book",
-                    "year": "2020",
-                    "genre": "Fiction, Fantasy", 
-                    "rating": 4.6,
-                    "description": "Between life and death there is a library, and within that library, the shelves go on forever. Every book provides a chance to try another life you could have lived.",
-                    "why_recommended": "Thought-provoking exploration of life choices, regrets, and possibilities.",
-                    "similar_titles": ["The Invisible Life of Addie LaRue", "Life After Life", "The Alchemist"]
-                },
-                {
-                    "title": "Where the Crawdads Sing",
-                    "type": "book",
-                    "year": "2018",
-                    "genre": "Mystery, Fiction",
-                    "rating": 4.8,
-                    "description": "The story of Kya Clark, the 'Marsh Girl' of Barkley Cove, North Carolina, and a mysterious murder that rocks the small town.",
-                    "why_recommended": "Beautifully written mystery with rich atmosphere and character development.",
-                    "similar_titles": ["The Great Alone", "The Secret Life of Bees", "Educated"]
-                }
+                {"title": "Project Hail Mary", "type": "book", "year": "2021", "genre": "Sci-Fi", "rating": 4.8, "description": "A lone astronaut must save the earth.", "why_recommended": "Engaging hard sci-fi.", "similar_titles": ["The Martian"]},
+                {"title": "Dune", "type": "book", "year": "1965", "genre": "Sci-Fi", "rating": 4.7, "description": "The story of Paul Atreides.", "why_recommended": "Epic masterpiece.", "similar_titles": ["Foundation"]}
+            ],
+            'tv': [
+                {"title": "Breaking Bad", "type": "tv", "year": "2008", "genre": "Crime, Drama", "rating": 9.5, "description": "A high school chemistry teacher turned manufacturing drug dealer.", "why_recommended": "Widely considered one of the best shows ever made.", "similar_titles": ["Better Call Saul", "Ozark"]},
+                {"title": "Stranger Things", "type": "tv", "year": "2016", "genre": "Sci-Fi, Horror", "rating": 8.7, "description": "When a young boy vanishes, a small town uncovers a mystery.", "why_recommended": "Nostalgic and thrilling.", "similar_titles": ["Dark", "The OA"]}
             ]
         }
         
-        if media_type == "movie":
-            return fallback_data['movie'][:3]
-        elif media_type == "book":
-            return fallback_data['book'][:3]
-        else:
-            # Mix for "both" - ensure we have both types
-            movies = fallback_data['movie'][:2]
-            books = fallback_data['book'][:1]
-            return movies + books
-
-    def get_execution_metrics(self) -> Dict[str, Any]:
-        """Get execution metrics for monitoring"""
-        return {
-            "timestamp": datetime.now().isoformat(),
-            "agents_initialized": len([self.analysis_agent, self.movie_agent, self.book_agent, 
-                                     self.research_agent, self.editor_agent]),
-            "tasks_configured": len([self.analysis_task, self.movie_task, self.book_task,
-                                   self.research_task, self.editor_task]),
-            "llm_model": self.llm.model_name,
-            "llm_temperature": self.llm.temperature
-        }
+        if media_type in fallback_data:
+            return fallback_data[media_type][:3]
+        
+        return fallback_data['movie'][:3] # Default

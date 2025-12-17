@@ -29,7 +29,13 @@ def render_sidebar(personalization_manager) -> Tuple:
         
         if 'watchlist' in st.session_state and st.session_state.watchlist:
             for item in st.session_state.watchlist:
-                emoji = "🎬" if item.get('type') == 'movie' else "📚"
+                if item.get('type') == 'movie':
+                    emoji = "🎬"
+                elif item.get('type') == 'book':
+                    emoji = "📚"
+                else: # tv
+                    emoji = "📺"
+                    
                 st.markdown(f"{emoji} **{item['title']}**")
         else:
             st.info("No items in bucketlist yet. Save recommendations to see them here!")
@@ -39,7 +45,7 @@ def render_sidebar(personalization_manager) -> Tuple:
         # Media type selection
         media_type = st.radio(
             "What would you like recommendations for?",
-            ["Movie", "Book", "Both"],
+            ["Movie", "Book", "TV Series"],
             index=0
         )
         # User preferences
@@ -88,13 +94,15 @@ def get_external_link(title: str, media_type: str) -> str:
     
     Args:
         title: Media title
-        media_type: 'movie' or 'book'
+        media_type: 'movie', 'book' or 'tv'
         
     Returns:
         URL string
     """
     encoded_title = urllib.parse.quote(title)
     if media_type == 'movie':
+        return f"https://www.justwatch.com/us/search?q={encoded_title}"
+    elif media_type == 'tv':
         return f"https://www.justwatch.com/us/search?q={encoded_title}"
     else:  # book
         return f"https://www.goodreads.com/search?q={encoded_title}"
@@ -130,15 +138,21 @@ def display_recommendations(recommendations: List[Dict], personalization_manager
             col1, col2 = st.columns([1, 3])
             
             with col1:
+                # Determine emoji fallback
+                if rec.get('type') == 'movie':
+                    emoji = "🎬"
+                elif rec.get('type') == 'book':
+                    emoji = "📚" 
+                else: # tv
+                    emoji = "📺"
+                
                 # Display proper image or fallback emoji
                 if rec.get('image_url'):
                     try:
                         st.image(rec['image_url'], use_container_width=True, width="stretch")
                     except Exception:
-                        emoji = "🎬" if rec.get('type') == 'movie' else "📚"
                         st.markdown(f"<h3>{emoji} #{i}</h3>", unsafe_allow_html=True)
                 else:
-                    emoji = "🎬" if rec.get('type') == 'movie' else "📚"
                     st.markdown(f"<h3>{emoji} #{i}</h3>", unsafe_allow_html=True)
                 
                 # Render rating
@@ -163,7 +177,10 @@ def display_recommendations(recommendations: List[Dict], personalization_manager
                 with col_badges[1]:
                     st.markdown(f"**Genre:** {rec.get('genre', 'N/A')}")
                 with col_badges[2]:
-                    if rec.get('duration'):
+                    # Display duration or seasons
+                    if rec.get('type') == 'tv' and rec.get('seasons'):
+                        st.markdown(f"**Length:** {rec['seasons']}")
+                    elif rec.get('duration'):
                         st.markdown(f"**Duration:** {rec['duration']}")
                 
                 # Description
@@ -184,13 +201,13 @@ def display_recommendations(recommendations: List[Dict], personalization_manager
                         for similar in rec['similar_titles'][:3]:
                             st.write(f"• {similar}")
                 
-                # Watch Trailer (Movies) or Read Sample (Books)
-                if rec.get('type') == 'movie':
+                # Watch Trailer / External Actions
+                if rec.get('type') in ['movie', 'tv']:
                     if rec.get('trailer_url'):
                         with st.expander("🎬 Watch Trailer"):
                             st.video(rec['trailer_url'])
                     
-                    external_link = get_external_link(rec['title'], 'movie')
+                    external_link = get_external_link(rec['title'], rec['type'])
                     st.link_button("📺 Watch on JustWatch", external_link)
                     
                 elif rec.get('type') == 'book':

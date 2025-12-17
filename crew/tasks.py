@@ -26,7 +26,7 @@ def create_tasks(agents: dict) -> dict:
             Personalization Context: {personalization_context}
             
             YOUR MISSION:
-            1. Determine primary media type preference (movie/book/both)
+            1. Determine primary media type preference (movie/book/tv series)
             2. Extract specific genres, themes, and moods
             3. Identify timeframe preferences
             4. Note any special requirements or constraints
@@ -44,7 +44,7 @@ def create_tasks(agents: dict) -> dict:
             - Do not over-analyze simple queries.
             
             OUTPUT FORMAT:
-            - Media Type: [movie/book/both]
+            - Media Type: [movie/book/tv]
             - Key Genres: [comma-separated list]
             - Mood/Tone: [primary mood]
             - Timeframe: [specific preference]
@@ -91,6 +91,50 @@ def create_tasks(agents: dict) -> dict:
             """,
             agent=agents['movie_agent'],
             expected_output="""List of {num_recommendations} movie recommendations with complete details.
+            Each must include: title, year, genre, rating, description, why_recommended, similar_titles, image_url, trailer_url.""",
+            async_execution=False,
+            max_iter=5,
+        )
+        
+        # TV recommendation task
+        tv_series_task = Task(
+            description="""FIND TV SERIES RECOMMENDATIONS:
+            
+            User Preferences:
+            - Media Type: {media_type}
+            - Genre: {genre}
+            - Mood: {mood}
+            - Timeframe: {timeframe}
+            - Specific Request: {user_request}
+            - Number Needed: {num_recommendations}
+            
+            REQUIREMENTS:
+            - Find {num_recommendations} highly-rated TV shows
+            - Match user preferences closely
+            - Include diverse options when possible
+            - Use TMDB API for accurate data
+            
+            FOR EACH TV SHOW, PROVIDE:
+            - Title and first air year
+            - Genre classification
+            - Rating (out of 10)
+            - Number of seasons/episodes if available
+            - Brief description
+            - Why it matches user preferences
+            - 2-3 similar shows
+            - Image/Poster URL (from search results)
+            - Trailer URL (from search results)
+            
+            SMART STOPPING RULES:
+            1. If your FIRST search returns 3+ high-quality shows with images, STOP and return them immediately.
+            2. Do NOT run the exact same search query twice.
+            
+            STRATEGY:
+            - If 'Specific Request' contains a show name -> Use 'search_tv_shows' with that name.
+            - If request is for a genre -> Use 'discover_tv_shows'.
+            """,
+            agent=agents['tv_agent'],
+            expected_output="""List of {num_recommendations} TV show recommendations with complete details.
             Each must include: title, year, genre, rating, description, why_recommended, similar_titles, image_url, trailer_url.""",
             async_execution=False,
             max_iter=5,
@@ -145,7 +189,7 @@ def create_tasks(agents: dict) -> dict:
             
             RESEARCH FOCUS:
             - Recent news about recommended genres/themes
-            - Trending movies/books in relevant categories
+            - Trending movies/books/shows in relevant categories
             - Cultural context and relevance
             - Critical reception and reviews
             
@@ -186,12 +230,12 @@ def create_tasks(agents: dict) -> dict:
             OUTPUT REQUIREMENTS:
             - Valid JSON array only
             - 3-5 total recommendations
-            - Mix of media types if applicable
+            - Mix of media types if applicable (though user will select one specific type)
             - Clear personalization for each item
             
             CRITICAL: Return ONLY valid JSON, no other text.
             CRITICAL RULES FOR URLs:
-            - ONLY use image_url and trailer_url values that were provided by the Movie/Book agents
+            - ONLY use image_url and trailer_url values that were provided by the Movie/Book/TV agents
             - DO NOT generate or invent URLs
             - If a URL is missing from the specialist's output, set it to null
             - NEVER create fake TMDB or YouTube URLs
@@ -200,7 +244,7 @@ def create_tasks(agents: dict) -> dict:
             [
               {{
                 "title": "Item Title",
-                "type": "movie/book",
+                "type": "movie/book/tv",
                 "year": "2023",
                 "genre": "Genre1, Genre2",
                 "rating": 8.5,
@@ -220,7 +264,7 @@ def create_tasks(agents: dict) -> dict:
             Include 'preview_url' for books if available.
             NO additional text outside JSON.""",
             max_iter=3,
-            context=[movie_task, book_task, research_task],
+            context=[movie_task, book_task, tv_series_task, research_task],
         )
         
         logger.info("All tasks initialized successfully")
@@ -229,6 +273,7 @@ def create_tasks(agents: dict) -> dict:
             'analysis_task': analysis_task,
             'movie_task': movie_task,
             'book_task': book_task,
+            'tv_series_task': tv_series_task,
             'research_task': research_task,
             'editor_task': editor_task
         }
