@@ -6,6 +6,9 @@ from typing import Dict, List, Optional
 from dotenv import load_dotenv
 from crew import MediaRecommendationCrew
 from personalization_manager import PersonalizationManager
+from threading import Thread
+from api.movie_tools import DiscoverMoviesTool
+from api.tv_tools import DiscoverTVTool
 from ui import get_app_css, render_sidebar, display_recommendations
 
 # Load environment variables
@@ -166,6 +169,35 @@ class MediaRecommenderApp:
         
         # Get sidebar inputs from UI module
         media_type, genre, mood, timeframe, use_personalization, user_id = render_sidebar(self.personalization_manager)
+
+        # --- Cache Warming Logic ---
+        if 'last_genre' not in st.session_state:
+            st.session_state.last_genre = genre
+        
+        # If genre changed to something specific, warm the cache
+        if genre != "Any" and genre != st.session_state.last_genre:
+            st.session_state.last_genre = genre
+            
+            def warm_cache(selected_genre, m_type):
+                try:
+                    # Determine which tool to warm based on media type
+                    if m_type == "TV Series":
+                        tool = DiscoverTVTool()
+                        # call internal _run to trigger cache decorator
+                        tool._run(genre=selected_genre)
+                    elif m_type == "Movie":
+                        tool = DiscoverMoviesTool()
+                        tool._run(genre=selected_genre)
+                    # (Book API doesn't have a broad discovery tool same way, skipping)
+                    print(f"🔥 Cache warmed for {m_type} - {selected_genre}")
+                except Exception as e:
+                    print(f"Cache warming failed: {e}")
+
+            # Start background thread
+            thread = Thread(target=warm_cache, args=(genre, media_type))
+            thread.daemon = True
+            thread.start()
+        # ---------------------------
         
         # Handle Pivot Request (More Like This)
         if 'pivot_request' in st.session_state:
