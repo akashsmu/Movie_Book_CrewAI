@@ -178,8 +178,15 @@ def display_recommendations(recommendations: List[Dict], personalization_manager
                     st.markdown(f"**Genre:** {rec.get('genre', 'N/A')}")
                 with col_badges[2]:
                     # Display duration or seasons
-                    if rec.get('type') == 'tv' and rec.get('seasons'):
-                        st.markdown(f"**Length:** {rec['seasons']}")
+                    if rec.get('type') == 'tv':
+                        metadata = []
+                        if rec.get('seasons'):
+                            metadata.append(f"{rec['seasons']} Seasons")
+                        if rec.get('episodes'):
+                            metadata.append(f"{rec['episodes']} Episodes")
+                        
+                        if metadata:
+                            st.markdown(f"**Length:** {' | '.join(metadata)}")
                     elif rec.get('duration'):
                         st.markdown(f"**Duration:** {rec['duration']}")
                 
@@ -230,7 +237,11 @@ def display_recommendations(recommendations: List[Dict], personalization_manager
                         personalization_manager.record_feedback(user_id, rec, False)
                         st.success("Thanks for your feedback!")
                 with col_actions[2]:
-                    is_in_watchlist = rec in st.session_state.watchlist
+                    # Check by title and type instead of object identity
+                    is_in_watchlist = any(
+                        w.get('title') == rec.get('title') and w.get('type') == rec.get('type') 
+                        for w in st.session_state.watchlist
+                    )
                     
                     if is_in_watchlist:
                         if st.button("🗑️ Unsave", key=f"unsave_{i}"):

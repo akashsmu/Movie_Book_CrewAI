@@ -504,7 +504,9 @@ class MediaRecommendationCrew:
             'type': ['type:'],
             'image_url': ['image:', 'cover:', 'poster:'],
             'trailer_url': ['trailer:', 'video:'],
-            'preview_url': ['preview:', 'sample:', 'google books:']
+            'preview_url': ['preview:', 'sample:', 'google books:'],
+            'seasons': ['seasons:', 'number of seasons:'],
+            'episodes': ['episodes:', 'number of episodes:']
         }
         
         for field, patterns in field_patterns.items():
@@ -557,23 +559,34 @@ class MediaRecommendationCrew:
                 logger.warning(f"Recommendation missing title: {rec}")
     
     def _enrich_ratings(self, recommendations: List[Dict]):
-        """Enhanced rating enrichment with better error handling"""
+        """Enhanced rating enrichment with proactive caching"""
         for rec in recommendations:
             try:
+                title = rec.get('title')
+                media_type = rec.get('type')
                 current_rating = rec.get('rating')
                 
-                # Skip if we already have a valid rating
-                if current_rating not in (None, '', 'N/A', 'Unknown'):
+                # Proactive caching: if agent provided a rating, cache it if not already there
+                if title and media_type != 'unknown' and current_rating not in (None, '', 'N/A', 'Unknown'):
+                    cache_key = f"{media_type}:{title.lower()}"
+                    if self._rating_cache.get(cache_key) is None:
+                        try:
+                            # Normalize before caching
+                            self._normalize_rating(rec)
+                            self._rating_cache.set(cache_key, rec['rating'])
+                            logger.debug(f"Proactively cached rating for {title}: {rec['rating']}")
+                        except Exception: pass
                     continue
                 
-                # Attempt to fetch rating
-                fetched_rating = self._fetch_rating_for_rec(rec)
-                if fetched_rating is not None:
-                    rec['rating'] = fetched_rating
-                    logger.debug(f"Enriched rating for {rec.get('title')}: {fetched_rating}")
-                else:
-                    rec['rating'] = 'N/A'
-                    
+                # Standard enrichment flow for missing ratings
+                if current_rating in (None, '', 'N/A', 'Unknown'):
+                    fetched_rating = self._fetch_rating_for_rec(rec)
+                    if fetched_rating is not None:
+                        rec['rating'] = fetched_rating
+                        logger.debug(f"Enriched rating for {rec.get('title')}: {fetched_rating}")
+                    else:
+                        rec['rating'] = 'N/A'
+                        
             except Exception as e:
                 logger.warning(f"Failed to enrich rating for {rec.get('title')}: {e}")
                 rec['rating'] = 'N/A'

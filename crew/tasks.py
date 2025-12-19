@@ -118,7 +118,8 @@ def create_tasks(agents: dict) -> dict:
             - Title and first air year
             - Genre classification
             - Rating (out of 10)
-            - Number of seasons/episodes if available
+            - Number of seasons (Format: "Seasons: X")
+            - Number of episodes (Format: "Episodes: Y")
             - Brief description
             - Why it matches user preferences
             - 2-3 similar shows
@@ -255,7 +256,9 @@ def create_tasks(agents: dict) -> dict:
                 "similar_titles": ["Title1", "Title2", "Title3"],
                 "image_url": "https://...",
                 "trailer_url": "https://www.youtube.com/...",
-                "preview_url": "https://books.google.com/..."
+                "preview_url": "https://books.google.com/...",
+                "seasons": "3 (if TV)",
+                "episodes": "24 (if TV)"
               }}
             ]""",
             agent=agents['editor_agent'],

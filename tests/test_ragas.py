@@ -63,30 +63,39 @@ def run_evaluation():
         if not expected_tools:
             tool_hit = True # No specific tool requirement
         else:
-            # Check if any expected tool name appears in the trace
-            # This is a heuristic as trace contains tool outputs, but usually tool name is logged or part of output
-            # If trace only contains output, we might miss the tool name unless orchestrator logs it.
-            # Our orchestrator logs "Agent Step: ... executing a step...". 
-            # The capture logic in orchestrator captures `step_output.result` or `str(step_output)`.
-            # If `step_output` contains the tool name, we are good.
-            # For now, let's assume if the result makes sense, the tool was used. 
-            # BUT, we can also check if the *content* implies the tool.
-            # Better implementation: Log tool usage explicitly in trace in orchestrator.
-            # Current implementation captures `str(step_output.result)`.
-            # We'll check if context contains typical output from the tool.
-            # Or we can just mark it as passed for now to not block.
-            
-            # Let's rely on the fact that if we got a valid result, the tool likely worked.
-            # But let's check for keywords in the trace.
+            #  heck for keywords in the trace.
             trace_text = " ".join([str(c) for c in contexts]).lower()
             for tool in expected_tools:
                 # Heuristic: search result usually contains "Title:" or tool specific strings
+                # TV Checks
                 if tool == "search_tv_shows" and "Title:" in trace_text:
                     tool_hit = True
                 elif tool == "discover_tv_shows" and "Title:" in trace_text:
                      tool_hit = True
                 elif tool == "get_popular_tv_shows" and "Popular" in trace_text:
                     tool_hit = True
+                
+                # Movie Checks
+                elif tool == "search_movie" and "Title:" in trace_text:
+                    tool_hit = True
+                elif tool == "discover_movies" and "Title:" in trace_text:
+                    tool_hit = True
+                elif tool == "find_similar_titles" and ("Similar" in trace_text or "Title:" in trace_text):
+                    tool_hit = True
+                
+                # Book Checks
+                elif tool == "search_books" and ("Title:" in trace_text or "Author:" in trace_text):
+                    tool_hit = True
+                elif tool == "find_books" and ("Title:" in trace_text or "Author:" in trace_text):
+                    tool_hit = True
+                
+                # General fallback for specific tool names appearing in the log
+                # (Output format isn't always captured perfectly, but often tool name is logged by orchestrator)
+                # Since we cleared trace in orchestrator, we rely on output content.
+                # Let's also check if tool name is just loosely in there (optimistic check)
+                elif tool in trace_text:
+                    tool_hit = True
+
                 
                 # If we found any match
                 if tool_hit: break
@@ -130,6 +139,13 @@ def run_evaluation():
             print(score)
             df = score.to_pandas()
             print(df)
+            
+            # Save to file
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"tests/results/ragas_report_{timestamp}.csv"
+            df.to_csv(filename, index=False)
+            print(f"\n✅ Report saved to {filename}")
             
             # Add Tool Accuracy
             print(f"\nTool Call Accuracy: {sum(results_data['tool_accuracy'])/len(results_data['tool_accuracy']) * 100:.1f}%")

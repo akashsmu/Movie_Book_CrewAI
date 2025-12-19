@@ -43,7 +43,7 @@ class PersistentCacheManager:
         self._cache = {}
         self._dirty = False
         self._last_save_time = 0
-        self.SAVE_DEBOUNCE_SECONDS = 5  # Wait 5 seconds before saving
+        self.SAVE_DEBOUNCE_SECONDS = 1  # Reduced to 1s to prevent data loss in short runs
         
         # Create cache directory if it doesn't exist
         self.cache_dir.mkdir(exist_ok=True)
@@ -65,7 +65,9 @@ class PersistentCacheManager:
                             self._cache[key] = tuple(value)  # (timestamp, data)
                 logger.info(f"Loaded {len(self._cache)} entries from {self.cache_file}")
             else:
-                logger.info(f"No existing cache file found at {self.cache_file}")
+                # Initialize empty file immediately to prevent "missing file" confusion
+                self._save_to_disk(force=True)
+                logger.info(f"Created new cache file at {self.cache_file}")
         except Exception as e:
             logger.error(f"Error loading cache from disk: {e}")
             self._cache = {}
@@ -135,7 +137,8 @@ class PersistentCacheManager:
         """
         with self.lock:
             self._cache[key] = (time.time(), value)
-            self._save_to_disk()
+            # Force save immediately to prevent data loss on interruption
+            self._save_to_disk(force=True)
     
     def clear(self):
         """Clear all cache entries."""

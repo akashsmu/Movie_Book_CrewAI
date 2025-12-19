@@ -10,9 +10,10 @@ A sophisticated multi-agent AI system that provides personalized movie and book 
 ## 🌟 Features
 
 ### 🤖 Multi-Agent Architecture
-- **Analysis Agent**: Understands user intent and extracts preferences
+- **Analysis Agent**: Understands user intent and extracts preferences (Movies, Books, and TV)
 - **Movie Specialist**: Expert in film recommendations using TMDB API
 - **Book Specialist**: Literary expert using Google Books API
+- **TV Specialist**: Expert in TV series, seasons, and trending shows using TMDB API
 - **Research Agent**: Gathers additional context and trending information
 - **Editor Agent**: Refines and personalizes final recommendations
 
@@ -121,15 +122,27 @@ The application will open at `http://localhost:8501`
 ### File Structure
 ```
 Movie_Book_CrewAI/
+├── api/                   # API Tools and Integrations
+│   ├── tv_tools.py        # TV Series tools
+│   ├── movie_tools.py     # Movie tools
+│   └── book_tools.py      # Book tools
+├── crew/                  # CrewAI Agents and Tasks
+│   ├── agents.py          # Agent definitions
+│   ├── tasks.py           # Task definitions
+│   └── orchestrator.py    # Main crew orchestration
+├── ui/                    # UI Components
+│   ├── components.py      # Reusable UI widgets
+│   └── styles.py          # CSS styles
+├── tests/                 # Test Suite
+│   ├── test_ragas.py      # Ragas evaluation script
+│   └── test_data.py       # Test dataset
 ├── app.py                 # Main Streamlit web application
-├── media_crew.py          # CrewAI agent orchestration
-├── media_apis.py          # API integrations and tools
 ├── personalization_manager.py # User profile management
 ├── environment.yml        # Conda environment configuration
 ├── requirements.txt       # Python dependencies
-├── setup.py              # Environment setup script
-├── run.py                # Application launcher
-└── .env.example          # Environment variables template
+├── setup.py               # Environment setup script
+├── run.py                 # Application launcher
+└── .env.example           # Environment variables template
 ```
 
 ### System Workflow
@@ -149,6 +162,7 @@ Movie_Book_CrewAI/
 | **Analysis Agent** | Understands user intent | OpenAI LLM |
 | **Movie Specialist** | Finds movie recommendations | TMDB API, Search |
 | **Book Specialist** | Finds book recommendations | Google Books API, Search |
+| **TV Specialist** | Finds TV show recommendations | TMDB API, Search/Discover |
 | **Research Agent** | Gathers additional context | SerpAPI, News Search |
 | **Editor Agent** | Refines final output | OpenAI LLM |
 
@@ -374,9 +388,9 @@ pip install -r requirements.txt
 ```
 
 ### Testing
+Run the automated test suite (including Ragas evaluation):
 ```bash
-# Add tests to test_media_apis.py, test_media_crew.py, etc.
-python -m pytest tests/
+python -m tests.test_ragas
 ```
 
 ## 🙏 Acknowledgments
@@ -397,6 +411,7 @@ python -m pytest tests/
 
 ## 🔄 Version History
 
+- **v1.2.0** (New): Added TV Series support, Ragas testing integration, and modularized codebase.
 - **v1.1.0** (Update): Added Movie Trailers, Visual Enhancements, Fast Path Performance, and Diversity/Discovery Mode.
 - **v1.0.0** (Current): Initial release with multi-agent recommendation system
 - **v0.1.0**: Beta release with basic functionality

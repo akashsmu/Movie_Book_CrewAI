@@ -25,10 +25,13 @@ def cache_api_call(ttl: int = 300):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            # Create cache key from function name and arguments
+            # Create deterministic cache key
             # If this is a bound method, drop `self` from the args when forming the key
             key_args = args[1:] if (len(args) > 0 and hasattr(args[0], '__class__')) else args
-            cache_key = f"{func.__name__}:{str(key_args)}:{str(kwargs)}"
+            
+            # Sort kwargs to ensure deterministic key regardless of dict order
+            sorted_kwargs = dict(sorted(kwargs.items()))
+            cache_key = f"{func.__name__}:{str(key_args)}:{str(sorted_kwargs)}"
 
             # Check cache using persistent manager
             cached_result = _api_cache.get(cache_key, ttl=ttl)
