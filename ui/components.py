@@ -3,6 +3,7 @@
 import streamlit as st
 import urllib.parse
 from typing import List, Dict, Tuple
+from ui.social_card import generate_social_card
 
 
 def render_sidebar(personalization_manager) -> Tuple:
@@ -133,6 +134,32 @@ def display_recommendations(recommendations: List[Dict], personalization_manager
         </div>
         """, unsafe_allow_html=True)
     
+    # Social Share
+    with st.expander("📤 Share Recommendations"):
+        col_s1, col_s2 = st.columns([1, 2])
+        with col_s1:
+            if st.button("📸 Generate Shareable Card"):
+                try:
+                    # Determine a title context if possible
+                    title_ctx = "My AI Recommendations"
+                    # If we have the user input in session (we usually do via app.py), we could use it, 
+                    # but here we only have the list. We'll stick to a generic title or user ID context if needed.
+                    
+                    img_buf = generate_social_card(recommendations, title_ctx)
+                    st.session_state.share_image = img_buf
+                except Exception as e:
+                    st.error(f"Failed to generate image: {e}")
+        
+        if 'share_image' in st.session_state:
+            with col_s2:
+                st.image(st.session_state.share_image, caption="Ready to share!", use_container_width=True)
+                st.download_button(
+                    label="⬇️ Download Image",
+                    data=st.session_state.share_image,
+                    file_name="ai_recommendations.png",
+                    mime="image/png"
+                )
+
     for i, rec in enumerate(recommendations, 1):
         with st.container():
             col1, col2 = st.columns([1, 3])

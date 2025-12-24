@@ -19,3 +19,4 @@ dependencies:
     - google-api-python-client>=2.108.0
     - ragas>=0.0.22
     - datasets>=2.14.0
+    - pillow>=10.0.0
