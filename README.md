@@ -13,33 +13,26 @@ A sophisticated multi-agent AI system that provides personalized movie and book 
 - **Analysis Agent**: Understands user intent and extracts preferences (Movies, Books, and TV)
 - **Movie Specialist**: Expert in film recommendations using TMDB API
 - **Book Specialist**: Literary expert using Google Books API
-- **TV Specialist**: Expert in TV series, seasons, and trending shows using TMDB API
-- **Research Agent**: Gathers additional context and trending information
-- **Editor Agent**: Refines and personalizes final recommendations
+- **TV Specialist**: Expert in TV series, seasons, and episode counts using TMDB API
+- **Research Agent**: Gathers additional context, news, and trending information
+- **Editor Agent**: Refined JSON output generator and personalizer
 
-### 🔌 Real-Time API Integration
-- **TMDB API**: Current movie data, ratings, trailers, and posters
-- **Google Books API**: Comprehensive book information, covers, and reviews
-- **SerpAPI**: Web search for similar titles and trending content
-- **Real-time Data**: Always up-to-date recommendations
-
-### 🎯 Smart Personalization
-- **User Profiles**: Save preferences and interaction history
-- **Adaptive Learning**: Improves recommendations based on feedback
-- **Context Awareness**: Considers mood, genre, and timeframe preferences
-- **History Tracking**: Learns from your likes and dislikes
-
-### 💻 User-Friendly Interface
-- **Streamlit Web App**: Beautiful, responsive interface
-- **Visual Richness**: Displays movie posters, book covers, and plays trailers directly in-app
-- **Interactive Controls**: Easy preference customization
-- **Real-time Results**: Instant recommendation generation (Optimized for speed)
-- **Feedback System**: Like/dislike to improve future suggestions
-
-### ⚡ Performance & Diversity
+### ⚡ Performance & Caching
 - **Fast Path**: Simple queries (e.g., "action movies") bypass deep analysis for sub-30s results.
+- **Cache Warming**: Background pre-fetching of data based on sidebar genre selection—data is ready before you even search.
+- **Multi-Tier Persistence**: Persistent disk-based caching for both raw API responses and enriched ratings, ensuring speed on repeat runs.
 - **Smart Stopping**: Agents recognize when they have enough good data and stop searching early.
-- **Discovery Mode**: Randomized exploration ensures you get fresh, diverse recommendations for broad genres, not just the same top 3 hits.
+
+### 🎨 UI & Social
+- **Modern Interface**: Streamlit-based UI with rich media, trailers, and glassmorphism-inspired design.
+- **Watchlist**: Save your favorite recommendations to a persistent watchlist.
+- **Shareable Lists**: Generate high-aesthetic social media image cards (Pillow-powered) to share your recommendations on social media.
+- **Pivot Discovery**: Click "✨ More Like This" on any item to instantly pivot the search based on that specific title.
+
+### 🧪 Quality Assurance
+- **Ragas Integration**: Automated evaluation of agent "Faithfulness" and "Answer Relevance".
+- **Automated Benchmarking**: Run `tests/test_ragas.py` to generate comprehensive evaluation reports.
+- **CSV Reporting**: Results are automatically exported to timestamped CSV files for historical analysis.
 
 ## 🚀 Quick Start
 
@@ -123,26 +116,33 @@ The application will open at `http://localhost:8501`
 ```
 Movie_Book_CrewAI/
 ├── api/                   # API Tools and Integrations
-│   ├── tv_tools.py        # TV Series tools
-│   ├── movie_tools.py     # Movie tools
-│   └── book_tools.py      # Book tools
+│   ├── tv_tools.py        # TV Series tools (w/ season details)
+│   ├── movie_tools.py     # Movie tools (w/ trailers)
+│   ├── book_tools.py      # Book tools (Google Books)
+│   └── __init__.py        # Tool exports
 ├── crew/                  # CrewAI Agents and Tasks
-│   ├── agents.py          # Agent definitions
-│   ├── tasks.py           # Task definitions
-│   └── orchestrator.py    # Main crew orchestration
+│   ├── agents.py          # Agent definitions (Specialist roles)
+│   ├── tasks.py           # Task definitions (Strict format)
+│   └── orchestrator.py    # Main crew orchestration & rating enrichment
 ├── ui/                    # UI Components
-│   ├── components.py      # Reusable UI widgets
-│   └── styles.py          # CSS styles
-├── tests/                 # Test Suite
-│   ├── test_ragas.py      # Ragas evaluation script
-│   └── test_data.py       # Test dataset
-├── app.py                 # Main Streamlit web application
-├── personalization_manager.py # User profile management
-├── environment.yml        # Conda environment configuration
-├── requirements.txt       # Python dependencies
-├── setup.py               # Environment setup script
+│   ├── components.py      # Sidebar, Recommendations & Share UI
+│   ├── styles.py          # App CSS & Animations
+│   └── social_card.py     # Shareable Image Card Generator (Pillow)
+├── utils/                 # Utilities
+│   └── cache_decorator.py # @cache_api_call implementation
+├── tests/                 # Quality Assurance
+│   ├── test_ragas.py      # Ragas evaluation (Faithfulness, Relevance)
+│   ├── test_data.py       # Evaluation dataset
+│   └── results/           # Exported CSV evaluation reports
+├── .cache/                # Persistent Cache Storage
+│   ├── api_cache.json     # Raw API response storage
+│   └── rating_cache.json  # External rating data cache
+├── app.py                 # Main Streamlit application & Cache Warming
+├── cache_manager.py       # Thread-safe persistent cache handler
+├── personalization_manager.py # User profile & Watchlist persistence
+├── requirements.txt       # Python dependencies (w/ Ragas, Pillow)
 ├── run.py                 # Application launcher
-└── .env.example           # Environment variables template
+└── .env                   # Configuration & API keys
 ```
 
 ### System Workflow
@@ -411,7 +411,8 @@ python -m tests.test_ragas
 
 ## 🔄 Version History
 
-- **v1.2.0** (New): Added TV Series support, Ragas testing integration, and modularized codebase.
+- **v1.3.0** (Latest): Added Social Share Cards (Pillow), background Cache Warming, persistent Watchlist fixes, and Ragas CSV report exporting.
+- **v1.2.0**: Added TV Series support, Ragas testing integration, and modularized codebase.
 - **v1.1.0** (Update): Added Movie Trailers, Visual Enhancements, Fast Path Performance, and Diversity/Discovery Mode.
 - **v1.0.0** (Current): Initial release with multi-agent recommendation system
 - **v0.1.0**: Beta release with basic functionality
