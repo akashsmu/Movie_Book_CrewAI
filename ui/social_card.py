@@ -34,45 +34,52 @@ def safe_load_font(size):
 def generate_social_card(recommendations: list, header_text: str = "AI Recommendations", prompt_desc: str = "") -> io.BytesIO:
     """
     Generate a social share image card from recommendations.
+    Style: Netflix-like vertical posters in a grid.
     Returns bytes buffer of PNG.
     """
     # Dimensions
     W = 1080
-    start_y = 350
-    item_height = 220
-    spacing = 30
     
-    num_items = min(len(recommendations), 10) 
+    # Layout Config
+    cols = 2
+    card_gap = 40
+    side_padding = 60
     
-    if num_items <= 3:
-        H = 1080 
-    else:
-        H = start_y + (num_items * (item_height + spacing)) + 100
+    # Calculate card size (Aspect Ratio 2:3)
+    available_w = W - (side_padding * 2) - ((cols - 1) * card_gap)
+    card_w = int(available_w / cols)
+    card_h = int(card_w * 1.5)
+    
+    num_items = min(len(recommendations), 8) # Limit to 8 to avoid massive image
+    import math
+    rows = math.ceil(num_items / cols)
+    
+    header_height = 400
+    if prompt_desc:
+        header_height = 500
         
-    # Aesthetic Palette (Cyberpunk / Modern Dark)
-    bg_start = (25, 20, 45)   # Deep Purple
-    bg_end = (10, 10, 15)     # Almost Black
+    H = header_height + (rows * (card_h + card_gap)) + 100
+        
+    # Aesthetic Palette
+    bg_start = (20, 20, 20)
+    bg_end = (5, 5, 5)
     text_main = (255, 255, 255)
-    text_dim = (180, 180, 200)
-    accent = (0, 240, 255)    # Cyan Neon
+    text_dim = (200, 200, 200)
+    accent = (229, 9, 20)    # Netflix Red-ish
     
-    # Glassmorphism Card Style (White at 10% opacity)
-    card_fill = (255, 255, 255, 25)
-    card_outline = (255, 255, 255, 40)
-
     # Base Image (Gradient)
     img = create_gradient(W, H, bg_start, bg_end).convert("RGBA")
     
-    # Create overlay for glass effect elements
+    # Create overlay for elements
     overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
 
     # Fonts
     title_font = safe_load_font(70)
     subtitle_font = safe_load_font(30)
-    rank_font = safe_load_font(60)
-    item_title_font = safe_load_font(45)
-    meta_font = safe_load_font(28)
+    card_title_font = safe_load_font(40)
+    meta_font = safe_load_font(24)
+    rank_font = safe_load_font(50)
     
     # Header
     draw.text((60, 60), "AI Media Recommender", font=subtitle_font, fill=accent)
@@ -82,75 +89,117 @@ def generate_social_card(recommendations: list, header_text: str = "AI Recommend
 
     # Optional prompt/description below header
     if prompt_desc:
-        wrapped_prompt = textwrap.fill(prompt_desc, width=40)
-        draw.text((60, 190), wrapped_prompt, font=subtitle_font, fill=text_dim)
+        prompt_desc = prompt_desc.capitalize()
+        wrapped_prompt = textwrap.fill(prompt_desc, width=45)
+        draw.text((60, 200), wrapped_prompt, font=subtitle_font, fill=text_dim)
 
-    # Draw Items
+    # Helper for vertical gradient (text protection)
+    def create_vertical_gradient(w, h):
+        base = Image.new('RGBA', (w, h), (0,0,0,0))
+        for y in range(h):
+            alpha = int(255 * (y / h))
+            # ramping up opacity faster at the end
+            alpha = int(alpha * 1.2)
+            if alpha > 255: alpha = 255
+            for x in range(w):
+                base.putpixel((x, y), (0, 0, 0, alpha))
+        return base
+
+    # Pre-compute gradient for cards
+    grad_h = int(card_h * 0.5)
+    text_protection_grad = create_vertical_gradient(card_w, grad_h)
+
+    # Draw Items (Grid)
     for i, rec in enumerate(recommendations[:num_items]):
-        y = start_y + (i * (item_height + spacing))
+        row = i // cols
+        col = i % cols
         
-        # Rounded Glass Card background
-        draw.rounded_rectangle(
-            [40, y, W-40, y+item_height], 
-            radius=30, 
-            fill=card_fill, 
-            outline=card_outline, 
-            width=2
-        )
-
-        # Load cover image (image_url or cover_url) and paste as portrait overlay on the left side of the card
+        x = side_padding + (col * (card_w + card_gap))
+        y = header_height + (row * (card_h + card_gap))
+        
+        # 1. Card Base (Placeholder if no image)
+        draw.rounded_rectangle([x, y, x+card_w, y+card_h], radius=20, fill=(40,40,40,255))
+        
+        # 2. Cover Image Background
         cover_url = rec.get('image_url') or rec.get('cover_url')
         if cover_url:
             try:
                 resp = requests.get(cover_url, timeout=5)
                 resp.raise_for_status()
                 cover_img = Image.open(io.BytesIO(resp.content)).convert('RGBA')
-                # Resize to a portrait size (narrow width, full card height with padding)
-                portrait_w = 80
-                portrait_h = item_height - 20
-                cover_resized = cover_img.resize((portrait_w, portrait_h))
-                # Apply slight opacity for glass effect
-                overlay_alpha = Image.new('RGBA', cover_resized.size, (255,255,255,30))
-                cover_resized = Image.alpha_composite(cover_resized, overlay_alpha)
-                # Paste onto overlay; position so it overlaps the rank circle
-                overlay.paste(cover_resized, (40, y + 10), cover_resized)
+                
+                # Aspect Fill
+                img_ratio = cover_img.width / cover_img.height
+                target_ratio = card_w / card_h
+                
+                if img_ratio > target_ratio:
+                    # Image is wider, crop sides
+                    new_h = card_h
+                    new_w = int(new_h * img_ratio)
+                else:
+                    # Image is taller, crop top/bottom
+                    new_w = card_w
+                    new_h = int(new_w / img_ratio)
+                    
+                cover_resized = cover_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                
+                # Center crop
+                left = (new_w - card_w) / 2
+                top = (new_h - card_h) / 2
+                cover_cropped = cover_resized.crop((left, top, left + card_w, top + card_h))
+                
+                # Create a rounded mask
+                mask = Image.new("L", (card_w, card_h), 0)
+                mask_draw = ImageDraw.Draw(mask)
+                mask_draw.rounded_rectangle([0, 0, card_w, card_h], radius=20, fill=255)
+                
+                # Paste cover with mask
+                # Need to paste onto a temp image first to apply mask composition if needed
+                # But simple paste with mask works on existing RGBA overlay
+                # Actually, 'overlay' is transparent. pasting masked image on it:
+                overlay.paste(cover_cropped, (x, y), mask)
+                
             except Exception:
                 pass
         
-        # Rank Circle
-        # draw.ellipse([70, y+60, 170, y+160], fill=(0,0,0,50))
-        draw.text((80, y+75), f"{i+1}", font=rank_font, fill=accent)
+        # 3. Gradient Overlay (Bottom) for Text
+        grad_mask = Image.new("L", (card_w, grad_h), 0)
+        grad_mask_draw = ImageDraw.Draw(grad_mask)
+        grad_mask_draw.polygon([(0,0), (card_w,0), (card_w, grad_h), (0, grad_h)], fill=255)
+        overlay.paste(text_protection_grad, (x, y + card_h - grad_h), text_protection_grad)
+
+        # 4. Rank Badge (Top Left)
+        draw.rounded_rectangle([x, y, x+60, y+60], radius=15, fill=accent)
+        draw.text((x+20, y+5), f"{i+1}", font=rank_font, fill=text_main)
+
+        # 5. Text Details (Vertical Stack)
+        content_margin = 25
+        text_bottom_y = y + card_h - content_margin
         
-        # Determine Title Layout
-        title = rec.get('title', 'Unknown')
-        # Truncate title if too long to prevent overlap
-        if len(title) > 55:
-            title = title[:52] + "..."
-        wrapped_title = textwrap.fill(title, width=28)
-        lines = wrapped_title.count('\n') + 1
-        
-        # Title Text
-        draw.multiline_text((200, y+45), wrapped_title, font=item_title_font, fill=text_main, spacing=8)
-        
-        # Metadata
+        # Meta line (bottom-most)
         meta = []
+        if rec.get('year'): meta.append(str(rec['year']))
         if rec.get('rating'): meta.append(f"{rec['rating']}")
         if rec.get('type'): meta.append(rec['type'].upper())
-        if rec.get('year'): meta.append(str(rec['year']))
-        # Add short description / why_recommended if space permits
+        meta_str = " • ".join(meta)
+        
+        draw.text((x + content_margin, text_bottom_y - 30), meta_str, font=meta_font, fill=text_dim)
+        
+        # Title (Above meta)
+        title = rec.get('title', 'Unknown')
+        wrapped_title = textwrap.fill(title, width=20) # Narrower for portrait card
+        
+        # Calculate height of title block to position it above meta
+        bbox = draw.multiline_textbbox((0,0), wrapped_title, font=card_title_font)
+        title_h = bbox[3] - bbox[1]
+        
+        title_y = text_bottom_y - 30 - title_h - 15
+        draw.multiline_text((x + content_margin, title_y), wrapped_title, font=card_title_font, fill=text_main, spacing=4)
 
-        meta_str = "  |  ".join(meta)
-        
-        # Adjust meta Y position to stick to bottom of card
-        # Fixed position from bottom of card
-        meta_y = y + item_height - 60
-            
-        draw.text((200, meta_y), meta_str, font=meta_font, fill=text_dim)
-        
     # Footer
-    #draw.text((W//2, H-60), "Generated with Movie_Book_CrewAI", font=subtitle_font, fill=text_dim, anchor="ms")
+    draw.text((W//2, H-50), "Generated with Movie_Book_CrewAI", font=subtitle_font, fill=text_dim, anchor="ms")
     
-    # Composite layers (background gradient + overlay with cards & covers)
+    # Composite layers
     out = Image.alpha_composite(img, overlay)
     
     # To Buffer

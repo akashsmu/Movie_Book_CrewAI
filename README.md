@@ -1,4 +1,4 @@
-# 🎬📚 AI Media Recommender System
+# AI Media Recommender System
 
 A sophisticated multi-agent AI system that provides personalized movie and book recommendations using CrewAI, real-time APIs, and intelligent personalization.
 
@@ -7,9 +7,9 @@ A sophisticated multi-agent AI system that provides personalized movie and book 
 ![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 
-## 🌟 Features
+## Features
 
-### 🤖 Multi-Agent Architecture
+### Multi-Agent Architecture
 - **Analysis Agent**: Understands user intent and extracts preferences (Movies, Books, and TV)
 - **Movie Specialist**: Expert in film recommendations using TMDB API
 - **Book Specialist**: Literary expert using Google Books API
@@ -17,24 +17,24 @@ A sophisticated multi-agent AI system that provides personalized movie and book 
 - **Research Agent**: Gathers additional context, news, and trending information
 - **Editor Agent**: Refined JSON output generator and personalizer
 
-### ⚡ Performance & Caching
+### Performance & Caching
 - **Fast Path**: Simple queries (e.g., "action movies") bypass deep analysis for sub-30s results.
 - **Cache Warming**: Background pre-fetching of data based on sidebar genre selection—data is ready before you even search.
 - **Multi-Tier Persistence**: Persistent disk-based caching for both raw API responses and enriched ratings, ensuring speed on repeat runs.
 - **Smart Stopping**: Agents recognize when they have enough good data and stop searching early.
 
-### 🎨 UI & Social
+### UI & Social
 - **Modern Interface**: Streamlit-based UI with rich media, trailers, and glassmorphism-inspired design.
 - **Watchlist**: Save your favorite recommendations to a persistent watchlist.
 - **Shareable Lists**: Generate high-aesthetic social media image cards (Pillow-powered) to share your recommendations on social media.
-- **Pivot Discovery**: Click "✨ More Like This" on any item to instantly pivot the search based on that specific title.
+- **Pivot Discovery**: Click "More Like This" on any item to instantly pivot the search based on that specific title.
 
-### 🧪 Quality Assurance
+### Quality Assurance
 - **Ragas Integration**: Automated evaluation of agent "Faithfulness" and "Answer Relevance".
 - **Automated Benchmarking**: Run `tests/test_ragas.py` to generate comprehensive evaluation reports.
 - **CSV Reporting**: Results are automatically exported to timestamped CSV files for historical analysis.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -76,7 +76,7 @@ streamlit run app.py
 
 The application will open at `http://localhost:8501`
 
-## 🔑 API Keys Required
+## API Keys Required
 
 ### Required APIs
 - **OpenAI API**: For AI agent reasoning and natural language processing
@@ -110,7 +110,7 @@ The application will open at `http://localhost:8501`
 2. Get API key from dashboard
 3. Add to `.env` as `SERPAPI_KEY=your_key_here`
 
-## 🏗️ Project Architecture
+## Project Architecture
 
 ### File Structure
 ```
@@ -166,7 +166,7 @@ Movie_Book_CrewAI/
 | **Research Agent** | Gathers additional context | SerpAPI, News Search |
 | **Editor Agent** | Refines final output | OpenAI LLM |
 
-## 🎮 How to Use
+## How to Use
 
 ### Basic Usage
 
@@ -199,7 +199,7 @@ Movie_Book_CrewAI/
 - Diversity level of suggestions
 - Include reviews and similar titles
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -225,7 +225,7 @@ SERPAPI_KEY=your_serpapi_key_here
 OMDB_API_KEY=your_omdb_api_key_here
 ```
 
-## 🛠️ Development
+##  Development
 
 ### Adding New APIs
 
@@ -271,7 +271,7 @@ def save_user_preferences(self, user_id: str, new_preference: str):
     # Implementation for new preference type
 ```
 
-## 📊 API Usage and Costs
+## API Usage and Costs
 
 ### Cost Estimation
 
@@ -288,7 +288,7 @@ def save_user_preferences(self, user_id: str, new_preference: str):
 - Monitor SerpAPI: [SerpAPI Dashboard](https://serpapi.com/dashboard)
 - Google Books quotas: [Google Cloud Console](https://console.cloud.google.com/)
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -319,7 +319,7 @@ Enable verbose logging by setting in `media_crew.py`:
 verbose=True  # In Agent and Crew initialization
 ```
 
-## 🚀 Deployment
+## Deployment
 
 ### Local Deployment
 ```bash
@@ -351,7 +351,7 @@ CMD ["streamlit", "run", "app.py"]
 2. Set environment variables
 3. Run with: `streamlit run app.py --server.port=80`
 
-## 📈 Performance Optimization
+## Performance Optimization
 
 ### Caching Strategies
 - Enable Streamlit caching for expensive operations
@@ -368,7 +368,7 @@ CMD ["streamlit", "run", "app.py"]
 - Implement pagination for large result sets
 - Use generators for large data processing
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our contributing guidelines:
 
@@ -393,7 +393,7 @@ Run the automated test suite (including Ragas evaluation):
 python -m tests.test_ragas
 ```
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **CrewAI**: For the amazing multi-agent framework
 - **OpenAI**: For powerful language models
@@ -402,14 +402,14 @@ python -m tests.test_ragas
 - **Streamlit**: For simple web app framework
 - **SerpAPI**: For reliable search results
 
-## 📞 Support
+## Support
 
 - **Documentation**: Check this README and code comments
 - **Issues**: Open a GitHub issue for bugs or feature requests
 - **Discussions**: Use GitHub discussions for questions
 - **Email**: Contact maintainers for direct support
 
-## 🔄 Version History
+## Version History
 
 - **v1.3.0** (Latest): Added Social Share Cards (Pillow), background Cache Warming, persistent Watchlist fixes, and Ragas CSV report exporting.
 - **v1.2.0**: Added TV Series support, Ragas testing integration, and modularized codebase.
@@ -419,6 +419,6 @@ python -m tests.test_ragas
 
 ---
 
-**Happy Exploring!** 🎬📚
+**Happy Exploring!** 
 
 Discover your next favorite movie or book with AI-powered recommendations tailored just for you.
