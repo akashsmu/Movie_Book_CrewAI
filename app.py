@@ -1,5 +1,24 @@
 import streamlit as st
 import os
+import signal
+import threading
+import logging
+
+# --- Monkeypatch for CrewAI/LangChain running in Streamlit threads ---
+# They try to use signal.signal() for timeouts, which fails in background threads.
+# We intercept calls to signal.signal and no-op them if not in the main thread.
+try:
+    _original_signal = signal.signal
+    def _safe_signal(sig, handler):
+        if threading.current_thread() is threading.main_thread():
+            return _original_signal(sig, handler)
+        else:
+            logging.warning(f"Intercepted signal.signal call for {sig} in non-main thread - ignoring to prevent crash.")
+    signal.signal = _safe_signal
+except Exception as e:
+    logging.warning(f"Failed to patch signal: {e}")
+# ---------------------------------------------------------------------
+
 from datetime import datetime
 import json
 from typing import Dict, List, Optional
