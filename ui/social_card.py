@@ -1,4 +1,5 @@
 from PIL import Image, ImageDraw, ImageFont
+import requests
 import io
 import textwrap
 import os
@@ -30,7 +31,7 @@ def safe_load_font(size):
                 continue
     return ImageFont.load_default()
 
-def generate_social_card(recommendations: list, header_text: str = "AI Recommendations") -> io.BytesIO:
+def generate_social_card(recommendations: list, header_text: str = "AI Recommendations", prompt_desc: str = "") -> io.BytesIO:
     """
     Generate a social share image card from recommendations.
     Returns bytes buffer of PNG.
@@ -74,17 +75,21 @@ def generate_social_card(recommendations: list, header_text: str = "AI Recommend
     meta_font = safe_load_font(28)
     
     # Header
-    draw.text((60, 60), "🤖 AI Media Recommender", font=subtitle_font, fill=accent)
+    draw.text((60, 60), "AI Media Recommender", font=subtitle_font, fill=accent)
     
     wrapped_header = textwrap.fill(header_text, width=22)
     draw.text((60, 110), wrapped_header, font=title_font, fill=text_main)
-    
+
+    # Optional prompt/description below header
+    if prompt_desc:
+        wrapped_prompt = textwrap.fill(prompt_desc, width=40)
+        draw.text((60, 190), wrapped_prompt, font=subtitle_font, fill=text_dim)
+
     # Draw Items
     for i, rec in enumerate(recommendations[:num_items]):
         y = start_y + (i * (item_height + spacing))
         
-        # Rounded Glass Card
-        # Draw on overlay with alpha
+        # Rounded Glass Card background
         draw.rounded_rectangle(
             [40, y, W-40, y+item_height], 
             radius=30, 
@@ -92,6 +97,25 @@ def generate_social_card(recommendations: list, header_text: str = "AI Recommend
             outline=card_outline, 
             width=2
         )
+
+        # Load cover image (image_url or cover_url) and paste as portrait overlay on the left side of the card
+        cover_url = rec.get('image_url') or rec.get('cover_url')
+        if cover_url:
+            try:
+                resp = requests.get(cover_url, timeout=5)
+                resp.raise_for_status()
+                cover_img = Image.open(io.BytesIO(resp.content)).convert('RGBA')
+                # Resize to a portrait size (narrow width, full card height with padding)
+                portrait_w = 80
+                portrait_h = item_height - 20
+                cover_resized = cover_img.resize((portrait_w, portrait_h))
+                # Apply slight opacity for glass effect
+                overlay_alpha = Image.new('RGBA', cover_resized.size, (255,255,255,30))
+                cover_resized = Image.alpha_composite(cover_resized, overlay_alpha)
+                # Paste onto overlay; position so it overlaps the rank circle
+                overlay.paste(cover_resized, (40, y + 10), cover_resized)
+            except Exception:
+                pass
         
         # Rank Circle
         # draw.ellipse([70, y+60, 170, y+160], fill=(0,0,0,50))
@@ -99,7 +123,10 @@ def generate_social_card(recommendations: list, header_text: str = "AI Recommend
         
         # Determine Title Layout
         title = rec.get('title', 'Unknown')
-        wrapped_title = textwrap.fill(title, width=32)
+        # Truncate title if too long to prevent overlap
+        if len(title) > 55:
+            title = title[:52] + "..."
+        wrapped_title = textwrap.fill(title, width=28)
         lines = wrapped_title.count('\n') + 1
         
         # Title Text
@@ -107,23 +134,23 @@ def generate_social_card(recommendations: list, header_text: str = "AI Recommend
         
         # Metadata
         meta = []
-        if rec.get('rating'): meta.append(f"⭐ {rec['rating']}")
+        if rec.get('rating'): meta.append(f"{rec['rating']}")
         if rec.get('type'): meta.append(rec['type'].upper())
         if rec.get('year'): meta.append(str(rec['year']))
-        
+        # Add short description / why_recommended if space permits
+
         meta_str = "  |  ".join(meta)
         
-        # Adjust meta Y position
-        meta_y = y + 50 + (lines * 55)
-        if meta_y > y + item_height - 60: 
-            meta_y = y + item_height - 60
+        # Adjust meta Y position to stick to bottom of card
+        # Fixed position from bottom of card
+        meta_y = y + item_height - 60
             
         draw.text((200, meta_y), meta_str, font=meta_font, fill=text_dim)
         
     # Footer
-    draw.text((W//2, H-60), "Generated with Movie_Book_CrewAI", font=subtitle_font, fill=text_dim, anchor="ms")
+    #draw.text((W//2, H-60), "Generated with Movie_Book_CrewAI", font=subtitle_font, fill=text_dim, anchor="ms")
     
-    # Composite
+    # Composite layers (background gradient + overlay with cards & covers)
     out = Image.alpha_composite(img, overlay)
     
     # To Buffer

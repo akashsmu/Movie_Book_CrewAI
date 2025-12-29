@@ -145,7 +145,11 @@ def display_recommendations(recommendations: List[Dict], personalization_manager
                     # If we have the user input in session (we usually do via app.py), we could use it, 
                     # but here we only have the list. We'll stick to a generic title or user ID context if needed.
                     
-                    img_buf = generate_social_card(recommendations, title_ctx)
+                    # Get user input for the prompt description
+                    user_prompt = st.session_state.get('user_input', '')
+                    
+                    # Pass user_prompt as prompt_desc
+                    img_buf = generate_social_card(recommendations, title_ctx, prompt_desc=user_prompt)
                     st.session_state.share_image = img_buf
                 except Exception as e:
                     st.error(f"Failed to generate image: {e}")
