@@ -230,7 +230,7 @@ def create_tasks(agents: dict) -> dict:
             
             OUTPUT REQUIREMENTS:
             - Valid JSON array only
-            - 3-5 total recommendations
+            - Exactly {num_recommendations} total recommendations
             - Mix of media types if applicable (though user will select one specific type)
             - Clear personalization for each item
             
@@ -262,7 +262,7 @@ def create_tasks(agents: dict) -> dict:
               }}
             ]""",
             agent=agents['editor_agent'],
-            expected_output="""Valid JSON array with 3-5 personalized media recommendations.
+            expected_output="""Valid JSON array with exactly {num_recommendations} personalized media recommendations.
             Each item must have: title, type, year, genre, rating, description, why_recommended, similar_titles, image_url.
             Include 'preview_url' for books if available.
             NO additional text outside JSON.""",

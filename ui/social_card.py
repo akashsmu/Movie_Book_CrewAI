@@ -50,7 +50,7 @@ def generate_social_card(recommendations: list, header_text: str = "AI Recommend
     card_w = int(available_w / cols)
     card_h = int(card_w * 1.5)
     
-    num_items = min(len(recommendations), 8) # Limit to 8 to avoid massive image
+    num_items = min(len(recommendations), 8) # Limit to 8 to match UI slider maximum
     import math
     rows = math.ceil(num_items / cols)
     

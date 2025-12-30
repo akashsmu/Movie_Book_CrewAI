@@ -8,10 +8,6 @@ import json
 import re
 import time
 import logging
-from datetime import datetime
-
-# Import from new modular API structure
-from api import movie_tools, book_tools, tv_tools, search_tools
 from crew.agents import create_agents
 from crew.tasks import create_tasks
 from requests.adapters import HTTPAdapter
@@ -147,7 +143,6 @@ class MediaRecommendationCrew:
             
             # Execute crew
             # We run directly in the main thread to ensure Streamlit callbacks work correctly
-            # (Streamlit contexts are thread-local)
             result = crew.kickoff(inputs=task_inputs)
             
             # Parse and validate results
