@@ -115,7 +115,7 @@ class MediaRecommenderApp:
                      # Clean up "Thought:" prefix if present
                     if thought.startswith("Thought:"):
                         thought = thought[len("Thought:"):].strip()
-                    st.write(f"**🧠 {agent_name}:** {thought}")
+                    st.write(f"**{agent_name}:** {thought}")
                 
                 # If tool usage
                 if tool_name:

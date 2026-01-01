@@ -85,7 +85,7 @@ def create_tasks(agents: dict) -> dict:
             
             SMART STOPPING RULES:
             1. If the user asks for a specific genre (e.g. 'sci-fi', 'action'), use 'discover_movies' tool first. It gives diverse, high-quality results.
-            2. If your FIRST search returns 3+ high-quality movies with images and trailers, STOP and return them immediately.
+            2. If your FIRST search returns {num_recommendations} or more high-quality movies with images and trailers, STOP and return them immediately.
             3. Do NOT run the exact same search query twice.
             4. Only use 'get_movie_details' if you critically need cast/runtime info not in the search results.
             """,
@@ -127,7 +127,7 @@ def create_tasks(agents: dict) -> dict:
             - Trailer URL (from search results)
             
             SMART STOPPING RULES:
-            1. If your FIRST search returns 3+ high-quality shows with images, STOP and return them immediately.
+            1. If your FIRST search returns {num_recommendations} or more high-quality shows with images, STOP and return them immediately.
             2. Do NOT run the exact same search query twice.
             
             STRATEGY:
@@ -170,7 +170,7 @@ def create_tasks(agents: dict) -> dict:
             - Image/Cover URL (from search results)
             
             SMART STOPPING RULES:
-            1. If your FIRST search returns 3+ high-quality books with images, STOP and return them immediately.
+            1. If your FIRST search returns {num_recommendations} or more high-quality books with images, STOP and return them immediately.
             2. Do NOT run the exact same search query twice.
             3. Do NOT loop unnecessarily. Speed is quality.
             """,
