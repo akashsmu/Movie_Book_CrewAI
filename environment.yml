@@ -20,3 +20,4 @@ dependencies:
     - ragas>=0.0.22
     - datasets>=2.14.0
     - pillow>=10.0.0
+    - mem0ai>=0.0.1

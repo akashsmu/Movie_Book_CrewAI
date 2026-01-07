@@ -142,7 +142,8 @@ class MediaRecommenderApp:
                 # Get personalized context if enabled
                 personalization_context = ""
                 if use_personalization:
-                    personalization_context = self.personalization_manager.get_user_context(user_id)
+                    # Use Mem0 semantic retrieval if available, otherwise falls back to legacy
+                    personalization_context = self.personalization_manager.get_relevant_memories(user_id, user_input)
                 
                 # Initialize crew and get recommendations
                 crew = MediaRecommendationCrew()

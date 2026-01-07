@@ -21,6 +21,7 @@ A sophisticated multi-agent AI system that provides personalized movie and book 
 - **Fast Path**: Simple queries (e.g., "action movies") bypass deep analysis for sub-30s results.
 - **Cache Warming**: Background pre-fetching of data based on sidebar genre selection—data is ready before you even search.
 - **Multi-Tier Persistence**: Persistent disk-based caching for both raw API responses and enriched ratings, ensuring speed on repeat runs.
+- **Long-term Memory (Mem0)**: Advanced personalization using vector-based memory. The system learns from every search and feedback, remembering your taste across sessions.
 - **Smart Stopping**: Agents recognize when they have enough good data and stop searching early.
 
 ### UI & Social
@@ -184,9 +185,10 @@ Movie_Book_CrewAI/
 ### Advanced Features
 
 #### Personalization
-- Enable "Use my personalization profile" to save preferences
-- System learns from your interaction history
-- Recommendations improve over time based on feedback
+- **Session Profile**: Enable "Use my personalization profile" to save preferences during your current session.
+- **Long-term Memory (Mem0)**: Integration with Mem0 allows the system to extract "facts" about your taste from your queries and likes/dislikes.
+- **Semantic Retrieval**: Instead of just using recent history, the system performs vector search on your memories to find relevant context for every new search.
+- **Continuous Learning**: Recommendations improve over time as the system builds a comprehensive map of your media preferences.
 
 #### Quick Examples
 - "Mind-bending thriller like Inception"
@@ -223,6 +225,9 @@ SERPAPI_KEY=your_serpapi_key_here
 
 # Optional - Additional APIs
 OMDB_API_KEY=your_omdb_api_key_here
+
+# Personalization (Mem0)
+MEM0_API_KEY=your_mem0_api_key_here
 ```
 
 ##  Development
