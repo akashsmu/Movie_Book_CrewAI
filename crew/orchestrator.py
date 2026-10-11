@@ -1,5 +1,4 @@
-from crewai import Agent, Task, Crew, Process
-from langchain_openai import ChatOpenAI
+from crewai import Agent, Task, Crew, Process, LLM
 import os
 from typing import Dict, List, Optional, Any
 import concurrent.futures
@@ -62,22 +61,22 @@ class MediaRecommendationCrew:
         
         logger.info("MediaRecommendationCrew initialized successfully")
     
-    def _setup_llm(self) -> ChatOpenAI:
+    def _setup_llm(self) -> LLM:
         """Configure and return the LLM with proper error handling"""
         try:
             model = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
             temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
             api_key = os.getenv("OPENAI_API_KEY")
-            
+
             if not api_key:
                 raise ValueError("OPENAI_API_KEY environment variable is required")
-            
-            return ChatOpenAI(
+
+            return LLM(
                 model=model,
                 temperature=temperature,
                 api_key=api_key,
-                max_retries=2,
-                request_timeout=30
+                timeout=30,
+                max_retries=2
             )
         except Exception as e:
             logger.error(f"Failed to setup LLM: {e}")

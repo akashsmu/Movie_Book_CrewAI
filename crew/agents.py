@@ -1,7 +1,6 @@
 """Agent definitions for the Media Recommendation Crew."""
 
-from crewai import Agent
-from langchain_openai import ChatOpenAI
+from crewai import Agent, LLM
 import logging
 
 from api import movie_tools, book_tools, tv_tools, search_tools
@@ -9,7 +8,7 @@ from api import movie_tools, book_tools, tv_tools, search_tools
 logger = logging.getLogger(__name__)
 
 
-def create_agents(llm: ChatOpenAI) -> dict:
+def create_agents(llm: LLM) -> dict:
     """
     Create all agents for the media recommendation crew.
     
